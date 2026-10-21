@@ -504,30 +504,48 @@ class Vehicle {
 
     // Lissage dynamique du braquage Formule 1
     this.steerInput = (this.steerInput || 0) * 0.65 + steerDir * 0.35;
-    const maxTurnRate = 0.082;
-    const turnResponsiveness = Math.min(1.25, Math.max(0.3, this.speed / 2.2));
-    this.heading += this.steerInput * maxTurnRate * turnResponsiveness;
+    const maxTurnRate = 0.088;
+    // Permet de braquer même à basse vitesse ou à l'arrêt pour se réorienter
+    const turnResponsiveness = Math.min(1.35, Math.max(0.60, Math.abs(this.speed) / 2.0));
+    // En marche arrière, le braquage s'inverse de façon naturelle
+    const steerFactor = (this.speed < -0.1) ? -1 : 1;
+    this.heading += this.steerInput * maxTurnRate * turnResponsiveness * steerFactor;
 
-    // 3. Accélération, Freinage et Frein d'urgence
-    const accelRate = 0.22;
-    const brakeRate = 0.32;
-    const hardBrakeRate = 0.55;
+    // 3. Accélération, Freinage et Marche Arrière
+    const accelRate = 0.24;
+    const brakeRate = 0.38;
+    const hardBrakeRate = 0.60;
+    const maxReverseSpeed = -2.5;
 
     if (inputState && inputState.handbrake) {
-      // Espace : Freinage renforcé F1
-      this.speed = Math.max(0, this.speed - hardBrakeRate);
+      // Espace : Frein à main / Freinage d'urgence F1
+      if (this.speed > 0) this.speed = Math.max(0, this.speed - hardBrakeRate);
+      else if (this.speed < 0) this.speed = Math.min(0, this.speed + hardBrakeRate);
       this.lastOutputs = [0.5 + this.steerInput * 0.45, 0.0];
     } else if (inputState && inputState.up) {
-      // Z ou Flèche Haut : Accélération
-      this.speed = Math.min(this.maxspeed, this.speed + accelRate);
+      // Z ou Flèche Haut : Accélération avant (ou freinage si en marche arrière)
+      if (this.speed < -0.1) {
+        this.speed = Math.min(0, this.speed + brakeRate);
+      } else {
+        this.speed = Math.min(this.maxspeed, this.speed + accelRate);
+      }
       this.lastOutputs = [0.5 + this.steerInput * 0.45, 1.0];
     } else if (inputState && inputState.down) {
-      // S ou Flèche Bas : Freinage standard
-      this.speed = Math.max(0, this.speed - brakeRate);
-      this.lastOutputs = [0.5 + this.steerInput * 0.45, 0.1];
+      // S ou Flèche Bas : Freinage si la voiture avance, ou Marche Arrière si à l'arrêt
+      if (this.speed > 0.1) {
+        this.speed = Math.max(0, this.speed - brakeRate);
+      } else {
+        // Enclenchement fluide de la marche arrière
+        this.speed = Math.max(maxReverseSpeed, this.speed - accelRate * 0.6);
+      }
+      this.lastOutputs = [0.5 + this.steerInput * 0.45, (this.speed < 0 ? 0.7 : 0.1)];
     } else {
       // Décélération naturelle (résistance au roulement)
-      this.speed = Math.max(0, this.speed - 0.035);
+      if (this.speed > 0) {
+        this.speed = Math.max(0, this.speed - 0.045);
+      } else if (this.speed < 0) {
+        this.speed = Math.min(0, this.speed + 0.08);
+      }
       this.lastOutputs = [0.5 + this.steerInput * 0.45, 0.4];
     }
   }
@@ -614,7 +632,7 @@ class Vehicle {
       const isMovingForward = (typeof this.speed === 'number' && this.speed > 2.0);
       this.counter += (isMovingForward ? 0.35 : 1.0);
       const currentLifespan = (typeof LIFESPAN !== 'undefined') ? LIFESPAN : 750;
-      if (this.counter > currentLifespan) {
+      if (!this.isManual && this.counter > currentLifespan) {
         this.dead = true;
         this.eliminationReason = 'TIMEOUT_INACTIVITY';
       }
@@ -701,6 +719,12 @@ class Vehicle {
 
         // Seule une accumulation critique de dégâts violents ou crash frontal massif élimine
         if (this.health <= 0) {
+          if (this.isManual) {
+            this.health = 100;
+            this.speed = 1.5;
+            this.resetManual();
+            return;
+          }
           this.dead = true;
           this.eliminationReason = 'CRITICAL_WALL_DAMAGE';
         }
@@ -1533,8 +1557,15 @@ class Vehicle {
     if (this.dead || this.finished) return;
     if (!isDebugActive()) return; // Éléments de diagnostic strictement réservés au mode débogage actif
 
+    const trajOpts = (typeof window !== 'undefined' && window.trajOptions) ? window.trajOptions : {
+      real: true,
+      desired: true,
+      force: true,
+      target: true
+    };
+
     // 1. Trajectoire réelle suivie (historique des positions avec dégradé d'opacité)
-    if (this.trail && this.trail.length > 1) {
+    if (trajOpts.real && this.trail && this.trail.length > 1) {
       push();
       noFill();
       const trailLen = this.trail.length;
@@ -1551,34 +1582,42 @@ class Vehicle {
     // 2. Trajectoire désirée, force de braquage et cible pour le leader
     if (isLeader && this.goal && this.goal.midpoint) {
       const mid = this.goal.midpoint();
-      push();
 
       // Trajectoire désirée (ligne pointillée verte/cyan vers le prochain checkpoint)
-      stroke(16, 185, 129, 210);
-      strokeWeight(1.8);
-      const hasLineDash = (typeof drawingContext !== 'undefined' && drawingContext && typeof drawingContext.setLineDash === 'function');
-      if (hasLineDash) drawingContext.setLineDash([6, 6]);
-      line(this.pos.x, this.pos.y, mid.x, mid.y);
-      if (hasLineDash) drawingContext.setLineDash([]);
+      if (trajOpts.desired) {
+        push();
+        stroke(16, 185, 129, 210);
+        strokeWeight(1.8);
+        const hasLineDash = (typeof drawingContext !== 'undefined' && drawingContext && typeof drawingContext.setLineDash === 'function');
+        if (hasLineDash) drawingContext.setLineDash([6, 6]);
+        line(this.pos.x, this.pos.y, mid.x, mid.y);
+        if (hasLineDash) drawingContext.setLineDash([]);
+        pop();
+      }
 
       // Cible sur le circuit (anneaux concentriques animés rouge/orange)
-      noFill();
-      const currentFc = (typeof frameCount !== 'undefined') ? frameCount : 0;
-      const pulse = Math.sin(currentFc * 0.16) * 3;
-      stroke(239, 68, 68, 160);
-      strokeWeight(1.8);
-      ellipse(mid.x, mid.y, 22 + pulse, 22 + pulse);
-      stroke(255, 68, 68, 240);
-      strokeWeight(2.2);
-      ellipse(mid.x, mid.y, 11, 11);
-      fill(255, 68, 68, 255);
-      noStroke();
-      ellipse(mid.x, mid.y, 4, 4);
+      if (trajOpts.target) {
+        push();
+        noFill();
+        const currentFc = (typeof frameCount !== 'undefined') ? frameCount : 0;
+        const pulse = Math.sin(currentFc * 0.16) * 3;
+        stroke(239, 68, 68, 160);
+        strokeWeight(1.8);
+        ellipse(mid.x, mid.y, 22 + pulse, 22 + pulse);
+        stroke(255, 68, 68, 240);
+        strokeWeight(2.2);
+        ellipse(mid.x, mid.y, 11, 11);
+        fill(255, 68, 68, 255);
+        noStroke();
+        ellipse(mid.x, mid.y, 4, 4);
+        pop();
+      }
 
       // Force de steering (flèche verte proportionnelle à l'accélération latérale)
-      if (this.steerForce && (this.steerForce.x !== 0 || this.steerForce.y !== 0)) {
+      if (trajOpts.force && this.steerForce && (this.steerForce.x !== 0 || this.steerForce.y !== 0)) {
         const forceMag = Math.hypot(this.steerForce.x, this.steerForce.y);
         if (forceMag > 0.001) {
+          push();
           const angle = Math.atan2(this.steerForce.y, this.steerForce.x);
           const arrowLen = Math.min(45, forceMag * 140);
           const endX = this.pos.x + Math.cos(angle) * arrowLen;
@@ -1597,9 +1636,9 @@ class Vehicle {
             endX - Math.cos(angle - tipAngle) * tipLen, endY - Math.sin(angle - tipAngle) * tipLen,
             endX - Math.cos(angle + tipAngle) * tipLen, endY - Math.sin(angle + tipAngle) * tipLen
           );
+          pop();
         }
       }
-      pop();
     }
   }
 

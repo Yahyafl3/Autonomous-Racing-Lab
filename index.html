@@ -14,472 +14,394 @@
     <link rel="stylesheet" href="style.css?v=4.0" />
   </head>
   <body>
-    <!-- BARRE SUPÉRIEURE DE NAVIGATION ET STATUTS -->
+    <!-- BARRE SUPÉRIEURE DE NAVIGATION ET STATUTS (IMAGE 2 DESIGN) -->
     <header class="topbar">
-      <a class="brand" href="#simulation" aria-label="Autonomous Racing Lab, accueil">
+      <a class="brand" href="#simulation" aria-label="Autonomous Racing Lab">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32"><path d="M7 22 9.4 12.8A3.7 3.7 0 0 1 13 10h6a3.7 3.7 0 0 1 3.6 2.8L25 22v4h-3v-2H10v2H7zm4.3-8-1.1 4h11.6l-1.1-4a1.7 1.7 0 0 0-1.7-1.3h-6a1.7 1.7 0 0 0-1.7 1.3ZM11 21a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8Zm10 0a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8Z"/></svg>
         </span>
         <span class="brand-copy">
           <span class="brand-name">AUTONOMOUS <b>RACING LAB</b></span>
-          <span class="brand-caption">Evolutionary Steering & Neural Network Championship</span>
+          <span class="brand-caption">IA · MACHINE LEARNING · STEERING BEHAVIORS</span>
         </span>
       </a>
 
-      <!-- SÉLECTEUR RAPIDE DE STAGE & STATUTS -->
-      <div class="topbar-status" aria-label="État de la course et des stages">
-        <button id="btn-open-race-setup" class="race-setup-nav-btn" type="button" title="Ouvrir la préparation de course Formula Racing">
-          <span class="stage-nav-icon" aria-hidden="true">🚦</span>
+      <!-- SÉLECTEURS, STATUTS & ACTIONS RAPIDES -->
+      <div class="topbar-status" aria-label="Commandes de course et statut">
+        <button id="btn-open-race-setup" class="race-setup-nav-btn" type="button" title="Ouvrir la préparation de course">
+          <span class="stage-nav-icon">⚙</span>
           <span class="stage-nav-text"><b id="topbar-setup-btn-text">RACE SETUP</b></span>
         </button>
 
         <button id="btn-open-stages" class="stage-nav-btn" type="button" title="Ouvrir la sélection des stages et circuits">
-          <span class="stage-nav-icon" aria-hidden="true">🏁</span>
-          <span class="stage-nav-text"><b id="topbar-stage-badge">STAGE 1</b> <span id="topbar-stage-name">Beginner Circuit</span></span>
-          <span class="stage-nav-badge" id="topbar-stage-progress">1 / 5</span>
+          <span class="stage-nav-icon">🏁</span>
+          <span class="stage-nav-text"><b id="topbar-stage-badge">STAGE 2</b> <span id="topbar-stage-name">Mojave Canyon Raceway</span></span>
+          <span class="stage-nav-badge" id="topbar-stage-progress">2 / 5</span>
         </button>
 
-        <div class="circuit-picker-container" title="Sélection directe du circuit officiel">
-          <label for="select-active-circuit" class="sr-only">Circuit de course officiel</label>
-          <select id="select-active-circuit" class="topbar-circuit-select">
-            <option value="0">🏁 Circuit 1 : Pro Grand Prix (Compétition)</option>
-            <option value="1">🌵 Circuit 2 : Mojave Canyon (Désert)</option>
-            <option value="2">🌲 Circuit 3 : Blackwood Ring (Forêt)</option>
-            <option value="3">🏙️ Circuit 4 : Neo-Tokyo (Urbain)</option>
-            <option value="4">🏆 Circuit 5 : Yas Marina (SuperSpeedway)</option>
-          </select>
-        </div>
-
         <span class="chrono-chip" id="chrono-display" title="Temps écoulé depuis le début de la session">
-          <i class="chrono-icon" aria-hidden="true">⏱</i>
+          <i class="chrono-icon">⏱</i>
           <span id="timer-text">00:00.0</span>
         </span>
 
-        <span id="badge-status" class="status-chip"><i class="status-dot"></i><span id="status-text">RUNNING</span></span>
-        <span class="mode-chip" id="chip-driving-mode"><span class="chip-icon" aria-hidden="true">🤖</span><span id="badge-driving-mode">MODE IA</span></span>
+        <button id="btn-topbar-start" class="topbar-start-btn" type="button" title="Lancer la procédure de départ Formule 1">
+          <span class="start-btn-icon">▶</span>
+          <span>START PROCEDURE</span>
+        </button>
+
+        <button class="mode-topbar-btn" type="button" id="btn-topbar-mode" title="Basculer Mode IA / Manuel (Touche M)">
+          <span class="chip-icon">🤖</span>
+          <span id="badge-driving-mode">MODE IA</span>
+        </button>
+
         <button class="debug-topbar-btn" type="button" id="btn-topbar-debug" title="Mode Débogage (Touche F3 ou B)">
-          <span class="debug-icon">⚡</span>
+          <span class="debug-icon">🪲</span>
           <span>DÉBOGAGE</span>
           <span class="debug-badge-pill" id="topbar-debug-pill">OFF</span>
         </button>
-        <button class="nn-topbar-btn" type="button" id="btn-topbar-nn" onclick="if(typeof toggleNeuralModal === 'function') toggleNeuralModal();" title="Visualiser le Réseau de Neurones en Direct (Touche N)">
+
+        <button class="nn-topbar-btn" type="button" id="btn-topbar-nn" title="Visualiser le Réseau de Neurones en Direct (Touche N)">
           <span class="nn-icon">🧠</span>
-          <span>RÉSEAU IA</span>
+          <span>NEURONES <b class="nn-key-pill">N</b></span>
         </button>
-        <button class="mute-topbar-btn muted" type="button" id="btn-topbar-mute" title="Son désactivé (Fluidité maximale)">
+
+        <button class="mute-topbar-btn muted" type="button" id="btn-topbar-mute" title="Son ON/OFF">
           <span class="mute-icon">🔇</span>
         </button>
-        <span class="topbar-divider"></span>
-        <span class="mode-chip"><span class="chip-icon" aria-hidden="true">⌁</span><span id="badge-mode">COURSE</span></span>
-        <span class="track-chip"><span class="chip-icon" aria-hidden="true">◎</span><span id="badge-track">STAGE #1</span></span>
       </div>
     </header>
 
     <!-- COEUR DE L'APPLICATION (SIMULATION + TÉLÉMÉTRIE + DOCK DE CONTRÔLES) -->
     <main class="app-shell" id="simulation">
-      <!-- ZONE DE SIMULATION CANVAS P5.JS + THREE.JS 3D -->
+      <!-- ==================================================================== -->
+      <!-- COLONNE 1 (GAUCHE) : INFOS COURSE & CLASSEMENT & RADAR DU CIRCUIT    -->
+      <!-- ==================================================================== -->
+      <aside class="course-column" aria-label="Informations de course et classement">
+        <div class="panel-heading course-heading">
+          <div class="heading-title-wrap">
+            <span class="heading-icon">🏁</span>
+            <h2>INFOS COURSE</h2>
+          </div>
+          <span class="badge-stage-pill" id="course-stage-pill">STAGE 2</span>
+        </div>
+
+        <!-- STAGE ACTUEL CARD -->
+        <div class="course-stage-card">
+          <span class="course-caption">STAGE ACTUEL</span>
+          <b class="course-stage-title" id="overlay-stage-title">STAGE 2 - MOJAVE CANYON RACEWAY</b>
+        </div>
+
+        <!-- 2x2 METRICS GRID -->
+        <div class="course-stats-grid">
+          <div class="course-stat-cell">
+            <span class="course-stat-label">TOURS</span>
+            <b class="course-stat-val" id="overlay-lap">1 / 3</b>
+          </div>
+          <div class="course-stat-cell">
+            <span class="course-stat-label">GÉNÉRATION</span>
+            <b class="course-stat-val" id="overlay-gen">1</b>
+          </div>
+          <div class="course-stat-cell">
+            <span class="course-stat-label">VOITURES EN PISTE</span>
+            <b class="course-stat-val" id="overlay-alive">20 / 20</b>
+          </div>
+          <div class="course-stat-cell">
+            <span class="course-stat-label">LEADER (CHAMPION)</span>
+            <b class="course-stat-val" id="overlay-leader">🏆 CPR</b>
+          </div>
+        </div>
+
+        <div class="course-chrono-box">
+          <span class="course-chrono-label">CHRONOMÈTRE</span>
+          <b class="course-chrono-val" id="overlay-time">00:00.0</b>
+        </div>
+
+        <!-- CLASSEMENT GT3 / CHAMPIONSHIP -->
+        <div class="leaderboard-section">
+          <div class="lb-header">
+            <div class="lb-title-group">
+              <span class="lb-icon">📊</span>
+              <span class="lb-title">CLASSEMENT</span>
+            </div>
+            <span class="lb-stage-badge" id="lb-stage-badge">STAGE 2</span>
+          </div>
+          <div class="lb-grid-head">
+            <span class="col-pos">POS</span>
+            <span class="col-car">CAR</span>
+            <span class="col-prog">PILOTE</span>
+            <span class="col-fit">TOUR</span>
+            <span class="col-status">TEMPS</span>
+          </div>
+          <div id="lb-table-rows" class="lb-grid-body">
+            <!-- Rempli en temps réel par sketch.js -->
+          </div>
+        </div>
+
+        <!-- RADAR DU CIRCUIT (MINIMAP) -->
+        <div class="minimap-card">
+          <canvas id="track-minimap" width="240" height="95" aria-label="Mini-carte du circuit"></canvas>
+          <div class="minimap-meta">
+            <span class="minimap-caption">RADAR HOLOGRAPHIQUE</span>
+            <span class="minimap-subcaption" id="minimap-stage-sub">STAGE 2</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ==================================================================== -->
+      <!-- COLONNE 2 (CENTRE) : CIRCUIT DE COURSE (VIEWPORT CENTRAL DÉGAGÉ)      -->
+      <!-- ==================================================================== -->
       <section class="simulation-column" aria-label="Simulation du circuit">
         <div class="viewport-wrapper">
           <div id="canvas-container" aria-label="Circuit et véhicules simulés"></div>
           <div class="stage-vignette" aria-hidden="true"></div>
 
-          <!-- PORTIQUE DE FEUX DE DÉPART FORMULE 1 (STARTING LIGHTS GANTRY) -->
+          <!-- BADGE LIVE SIMULATION (HAUT DROITE DU CIRCUIT) -->
+          <div class="live-sim-badge" aria-label="Simulation en direct">
+            <span class="live-dot">●</span>
+            <span>LIVE SIMULATION</span>
+            <span class="live-chart-icon">📈</span>
+          </div>
+
+          <!-- PORTIQUE DE FEUX FORMULE 1 (CENTRE HAUT) -->
           <div id="f1-starting-lights-gantry" class="f1-gantry hidden" aria-label="Feux de départ Formule 1">
             <div class="gantry-header">
               <span class="gantry-f1-logo">FORMULA 1 · START PROCEDURE</span>
               <span id="gantry-status-badge" class="gantry-badge">READY TO RACE</span>
             </div>
             <div class="gantry-chassis">
-              <div class="gantry-light-pod" id="gantry-pod-0">
-                <div class="light-lamp lamp-top"></div>
-                <div class="light-lamp lamp-bottom"></div>
-              </div>
-              <div class="gantry-light-pod" id="gantry-pod-1">
-                <div class="light-lamp lamp-top"></div>
-                <div class="light-lamp lamp-bottom"></div>
-              </div>
-              <div class="gantry-light-pod" id="gantry-pod-2">
-                <div class="light-lamp lamp-top"></div>
-                <div class="light-lamp lamp-bottom"></div>
-              </div>
-              <div class="gantry-light-pod" id="gantry-pod-3">
-                <div class="light-lamp lamp-top"></div>
-                <div class="light-lamp lamp-bottom"></div>
-              </div>
-              <div class="gantry-light-pod" id="gantry-pod-4">
-                <div class="light-lamp lamp-top"></div>
-                <div class="light-lamp lamp-bottom"></div>
-              </div>
+              <div class="gantry-light-pod" id="gantry-pod-0"><div class="light-lamp lamp-top"></div><div class="light-lamp lamp-bottom"></div></div>
+              <div class="gantry-light-pod" id="gantry-pod-1"><div class="light-lamp lamp-top"></div><div class="light-lamp lamp-bottom"></div></div>
+              <div class="gantry-light-pod" id="gantry-pod-2"><div class="light-lamp lamp-top"></div><div class="light-lamp lamp-bottom"></div></div>
+              <div class="gantry-light-pod" id="gantry-pod-3"><div class="light-lamp lamp-top"></div><div class="light-lamp lamp-bottom"></div></div>
+              <div class="gantry-light-pod" id="gantry-pod-4"><div class="light-lamp lamp-top"></div><div class="light-lamp lamp-bottom"></div></div>
             </div>
-            <div id="gantry-subtext" class="gantry-subtext">ATTENDEZ L'EXTINCTION DES FEUX</div>
+            <div id="gantry-subtext" class="gantry-subtext">PRÉPARATION : ALLUMAGE DES FEUX (3/5)</div>
           </div>
 
-          <!-- BANNIÈRE D'INDICATEUR DE DÉPART (RACE STARTED) -->
+          <!-- BANNIÈRE LIGHTS OUT -->
           <div id="race-started-banner" class="race-started-banner hidden" aria-live="assertive">
             <span class="banner-title">LIGHTS OUT!</span>
             <span class="banner-sub">AND AWAY WE GO! 🏎️💨</span>
           </div>
 
-          <!-- HUD EN OVERLAY SUR LE CANVAS (ORIGINAL PRÉSERVÉ) -->
-          <div class="stage-stats" aria-label="Résumé en direct">
-            <div class="stage-stat stage-stat-stage">
-              <span>STAGE ACTUEL</span>
-              <b id="overlay-stage-title">STAGE 1 : BEGINNER</b>
-            </div>
-            <div class="stage-stat stage-stat-lap">
-              <span>OBJECTIF TOUR</span>
-              <b id="overlay-lap">TOUR 1 / 1</b>
-            </div>
-            <div class="stage-stat">
-              <span>GÉNÉRATION</span>
-              <b id="overlay-gen">1</b>
-            </div>
-            <div class="stage-stat">
-              <span>VOITURES EN VIE</span>
-              <b id="overlay-alive">100 / 100</b>
-            </div>
-            <div class="stage-stat stage-stat-champion">
-              <span>LEADER (CHAMPION)</span>
-              <b id="overlay-leader">0 CP</b>
-            </div>
-            <div class="stage-stat stage-stat-time">
-              <span>CHRONOMÈTRE</span>
-              <b id="overlay-time">00:00.0</b>
-            </div>
-          </div>
-
-          <!-- CLASSEMENT GT3 EN DIRECT (LIVE LEADERBOARD) -->
-          <aside id="live-leaderboard" class="live-leaderboard-card" aria-label="Classement GT3 en direct">
-            <div class="lb-header">
-              <div class="lb-title-group">
-                <span class="lb-caption">CHAMPIONSHIP</span>
-                <span class="lb-title">LIVE LEADERBOARD</span>
-              </div>
-              <span class="lb-stage-badge" id="lb-stage-badge">STAGE 1</span>
-            </div>
-            <div class="lb-grid-head">
-              <span class="col-pos">POS</span>
-              <span class="col-car">CAR</span>
-              <span class="col-prog">PROG</span>
-              <span class="col-fit">FITNESS</span>
-              <span class="col-status">STATUT</span>
-            </div>
-            <div id="lb-table-rows" class="lb-grid-body">
-              <!-- Rempli en temps réel -->
-            </div>
-          </aside>
-
-          <!-- TABLEAU DE BORD INSTRUMENTS COCKPIT GT3 -->
-          <div id="gt3-cluster" class="gt3-cluster" aria-label="Cockpit GT3 & Télémétrie">
-            <div class="gt3-cluster-main">
-              <div class="gt3-tachometer-box">
-                <svg class="tacho-dial" viewBox="0 0 140 140">
-                  <circle class="tacho-track" cx="70" cy="70" r="54"></circle>
-                  <circle id="tacho-progress-bar" class="tacho-fill" cx="70" cy="70" r="54"></circle>
-                </svg>
-                <div class="tacho-data">
-                  <span id="gt3-speed-val" class="tacho-speed">187</span>
-                  <span class="tacho-unit">KM/H</span>
-                  <span id="gt3-gear-val" class="tacho-gear">4</span>
-                  <span class="tacho-gear-label">GEAR</span>
-                </div>
-              </div>
-              <div class="gt3-cluster-info">
-                <div class="gt3-car-id-row">
-                  <span class="gt3-car-icon">🏎</span>
-                  <b id="gt3-car-name">#46 BMW M4 GT3</b>
-                  <span class="gt3-lap-chip">TOUR <b id="gt3-car-lap">1</b></span>
-                </div>
-                <div class="gt3-fit-row">
-                  <span>FITNESS:</span>
-                  <strong id="gt3-car-fitness">0.000</strong>
-                  <span class="gt3-div">|</span>
-                  <span>CAPTEURS:</span>
-                  <strong id="gt3-sensors-active">7 / 7 ACTIFS</strong>
-                </div>
-                <div class="gt3-pedals">
-                  <div class="pedal-gauge">
-                    <span class="pedal-label">THR</span>
-                    <div class="pedal-track"><div id="gt3-throttle-bar" class="pedal-fill fill-throttle" style="width: 85%;"></div></div>
-                  </div>
-                  <div class="pedal-gauge">
-                    <span class="pedal-label">BRK</span>
-                    <div class="pedal-track"><div id="gt3-brake-bar" class="pedal-fill fill-brake" style="width: 0%;"></div></div>
-                  </div>
-                  <div class="pedal-gauge">
-                    <span class="pedal-label">STR</span>
-                    <div class="pedal-track"><div id="gt3-steer-bar" class="pedal-fill fill-steer" style="width: 50%;"></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- WIDGET PROCHAIN CHECKPOINT -->
-          <div id="next-cp-widget" class="next-cp-card" aria-label="Prochain Checkpoint">
-            <div class="next-cp-arrow-box"><span id="next-cp-arrow-icon" class="next-cp-arrow">▲</span></div>
-            <div class="next-cp-details">
-              <span class="next-cp-kicker">NEXT CHECKPOINT</span>
-              <b id="next-cp-val">CP 1 / 60</b>
-              <small id="next-cp-distance">240 m</small>
-            </div>
-          </div>
-
-          <!-- MINI-CARTE VECTORIELLE DU CIRCUIT COURANT -->
-          <div class="minimap-card">
-            <canvas id="track-minimap" width="260" height="140" aria-label="Mini-carte du circuit actuel"></canvas>
-            <div class="minimap-meta">
-              <span class="minimap-caption">RADAR HOLOGRAPHIQUE</span>
-              <span class="minimap-subcaption" id="minimap-stage-sub">STAGE 1</span>
-            </div>
-          </div>
-
-          <!-- LÉGENDE DU CIRCUIT -->
-          <div class="track-legend" aria-label="Légende du circuit">
-            <span><i class="legend-car legend-car-champion"></i>Leader (Orange)</span>
-            <span><i class="legend-car legend-car-other"></i>Flotte IA</span>
-            <span><i class="legend-sensor"></i>Lasers Cyan</span>
-            <span><i class="legend-kerb"></i>Vibreurs</span>
-            <span><i class="legend-wall"></i>Rails Laser</span>
-          </div>
-
-          <span class="stage-label"><i></i> LIVE MOTORSPORT SIMULATION</span>
         </div>
       </section>
 
-      <!-- PANNEAU LATÉRAL DE TÉLÉMÉTRIE ET DE PERCEPTION -->
-      <aside class="telemetry-column" aria-label="Télémétrie et évolution">
-        <section class="panel-card telemetry-card">
-          <div class="panel-heading">
-            <div>
-              <span class="eyebrow">RACE ENGINEERING</span>
-              <h2>Télémétrie & Évolution</h2>
+      <!-- ==================================================================== -->
+      <!-- COLONNE 3 (DROITE) : TÉLÉMÉTRIE & IA                                 -->
+      <!-- ==================================================================== -->
+      <aside class="telemetry-column" aria-label="Télémétrie et Intelligence Artificielle">
+        <div class="panel-heading">
+          <div class="heading-title-wrap">
+            <span class="heading-icon">🎛️</span>
+            <h2>TÉLÉMÉTRIE & IA</h2>
+          </div>
+        </div>
+
+        <!-- ONGLETS DE NAVIGATION TÉLÉMÉTRIE -->
+        <div class="telemetry-tabs" role="tablist">
+          <button class="tel-tab-btn active" id="tab-btn-telemetry" type="button">Télémétrie</button>
+          <button class="tel-tab-btn" id="tab-btn-perception" type="button">Perception</button>
+          <button class="tel-tab-btn" id="tab-btn-evolution" type="button">Évolution</button>
+          <button class="tel-tab-btn" id="tab-btn-shap" type="button">SHAP</button>
+        </div>
+
+        <div class="tel-tab-content">
+          <!-- CARTE 1 : TÉLÉMÉTRIE VÉHICULE -->
+          <div class="tel-card" id="card-veh-telemetry">
+            <div class="tel-card-header">
+              <span class="tel-card-title">TÉLÉMÉTRIE VÉHICULE</span>
+              <span class="tel-car-pill"><svg class="tel-car-svg" viewBox="0 0 24 14"><path d="M2 10 L4 5 A2 2 0 0 1 6 3 L16 3 A2 2 0 0 1 18 5 L20 10 L22 10 A1 1 0 0 1 23 11 L23 12 A1 1 0 0 1 22 13 L2 13 A1 1 0 0 1 1 12 L1 11 A1 1 0 0 1 2 10 Z" fill="#00d084"/></svg> <b>#01 CPR</b> <span class="pill-leader-tag">Leader</span></span>
             </div>
-            <span id="telemetry-speed-badge" class="speed-chip">1×</span>
+            <div class="tel-metrics-list">
+              <div class="tel-metric-row"><span>Vitesse</span><b id="side-speed-val">0.0 km/h</b></div>
+              <div class="tel-metric-row"><span>Position</span><b id="side-pos-val">1 / 20</b></div>
+              <div class="tel-metric-row"><span>Accélération</span><b id="side-accel-val">0.00 m/s²</b></div>
+              <div class="tel-metric-row"><span>Steering</span><b id="side-steering-val">0.00</b></div>
+            </div>
           </div>
 
-          <div class="stats-grid">
-            <article class="stat-card">
-              <span class="stat-label">Génération</span>
-              <strong id="stat-gen">1</strong>
-              <small>Cycle évolutif</small>
-            </article>
-            <article class="stat-card">
-              <span class="stat-label">Voitures en vie</span>
-              <strong id="stat-alive">100 / 100</strong>
-              <small id="stat-alive-subtext">100% en piste</small>
-            </article>
-            <article class="stat-card stat-champion">
-              <span class="stat-label">Meilleur génération</span>
-              <strong><span id="stat-current-best">0</span><em>CP</em></strong>
-              <small>Leader Champion</small>
-            </article>
-            <article class="stat-card stat-record">
-              <span class="stat-label">Record absolu</span>
-              <strong><span id="stat-record">0</span><em>CP</em></strong>
-              <small>Maximum historique</small>
-            </article>
-          </div>
-
-          <!-- GRAPHIQUE HISTORIQUE D'ÉVOLUTION DES SCORES (RÉEL ET NON SIMULÉ) -->
-          <section class="chart-card" aria-label="Graphique des scores par génération">
-            <div class="chart-heading">
-              <div>
-                <span class="eyebrow">HISTORIQUE ÉVOLUTIF</span>
-                <h3>Évolution des scores</h3>
+          <!-- CARTE 2 : CAPTEURS & ENVIRONNEMENT -->
+          <div class="tel-card" id="card-sensors-env">
+            <div class="tel-card-header">
+              <span class="tel-card-title">CAPTEURS & ENVIRONNEMENT</span>
+            </div>
+            <div class="radar-box">
+              <canvas id="radar-sensor-display" width="250" height="120" aria-label="Radar 360 du leader"></canvas>
+              <div class="radar-legend-list">
+                <div class="radar-legend-row"><span class="radar-dot dot-car">●</span><span>Voitures détectées : <b id="radar-cars-count">0</b></span></div>
+                <div class="radar-legend-row"><span class="radar-dot dot-obs">▲</span><span>Obstacles : <b id="radar-obs-count">0</b></span></div>
+                <div class="radar-legend-row"><span class="radar-dot dot-range">⛶</span><span>Portée capteurs : <b id="radar-range-val">120 px</b></span></div>
               </div>
-              <div class="chart-legend">
-                <span><i class="chart-key key-best"></i>Meilleur</span>
-                <span><i class="chart-key key-avg"></i>Moyenne</span>
-                <span><i class="chart-key key-min"></i>Min</span>
-              </div>
-            </div>
-            <canvas id="telemetry-chart" width="640" height="210" aria-label="Scores réels des générations et record historique"></canvas>
-          </section>
-        </section>
-
-        <!-- RADAR CAPTEURS & ENVIRONNEMENT (4 QUADRANTS + OBSTACLES) -->
-        <section class="panel-card radar-card" aria-label="Capteurs et Environnement">
-          <div class="panel-heading compact-heading">
-            <div>
-              <span class="eyebrow">PERCEPTION RADAR</span>
-              <h2>Capteurs & Environnement</h2>
-            </div>
-            <span class="sensor-symbol" aria-hidden="true">⌖</span>
-          </div>
-
-          <div class="radar-box">
-            <canvas id="radar-sensor-display" width="280" height="190" aria-label="Radar holographique 360° du véhicule leader"></canvas>
-            <div class="radar-legend-grid">
-              <div class="radar-leg-item"><span class="radar-swatch swatch-front"></span><span>Avant (rayon 120°)</span></div>
-              <div class="radar-leg-item"><span class="radar-swatch swatch-left"></span><span>Gauche (rayon 90°)</span></div>
-              <div class="radar-leg-item"><span class="radar-swatch swatch-right"></span><span>Droite (rayon 90°)</span></div>
-              <div class="radar-leg-item"><span class="radar-swatch swatch-rear"></span><span>Arrière (rayon 120°)</span></div>
-              <div class="radar-leg-item"><span class="radar-sym-dot">○</span><span>Autres véhicules</span></div>
-              <div class="radar-leg-item"><span class="radar-sym-tri">▲</span><span>Obstacles / Rails</span></div>
             </div>
           </div>
 
-          <div class="sensor-options" role="group" aria-label="Mode d’affichage des capteurs">
-            <button class="sensor-option active" id="btn-sensors-leader" type="button"><span aria-hidden="true">◉</span>Leader</button>
-            <button class="sensor-option" id="btn-sensors-all" type="button"><span aria-hidden="true">⠿</span>Toutes</button>
-            <button class="sensor-option" id="btn-sensors-none" type="button"><span aria-hidden="true">⊘</span>Masqués</button>
+          <!-- CARTE 3 : PARAMÈTRES IA -->
+          <div class="tel-card" id="card-ai-params">
+            <div class="tel-card-header">
+              <span class="tel-card-title">PARAMÈTRES IA</span>
+            </div>
+            <div class="tel-ai-list">
+              <div class="tel-ai-row"><span class="ai-bullet">●</span><span>Modèle :</span><b>IA - Steering</b></div>
+              <div class="tel-ai-row"><span class="ai-bullet">●</span><span>Mode :</span><b>Autonome</b></div>
+              <div class="tel-ai-row"><span class="ai-bullet">●</span><span>Génération :</span><b id="side-ai-gen">1</b></div>
+              <div class="tel-ai-row"><span class="ai-bullet">●</span><span>Fitness :</span><b id="side-ai-fit">0.00</b></div>
+            </div>
+            <button class="btn-side-nn" id="btn-side-nn" type="button" onclick="if(typeof toggleNeuralModal === 'function') toggleNeuralModal();" title="Visualiser le Réseau de Neurones en Direct (Touche N)">
+              <span>🧠</span> <span>VOIR NEURONES</span> <kbd class="key-k">N</kbd>
+            </button>
           </div>
-        </section>
+
+          <!-- SECTION ÉVOLUTION (GRAPHIQUE DU SCORE) -->
+          <div class="tel-card hidden" id="card-evolution-graph">
+            <div class="tel-card-header">
+              <span class="tel-card-title">HISTORIQUE ÉVOLUTIF</span>
+            </div>
+            <canvas id="telemetry-chart" width="250" height="140"></canvas>
+          </div>
+        </div>
       </aside>
 
-      <!-- BARRE DE CONTRÔLES INFERIEURE ÉTENDUE (DOCK DE PILOTAGE GT3) -->
-      <section class="control-dock" aria-label="Contrôles de simulation et steering">
-        <!-- MODULE 1 : CONTRÔLES PILOTE -->
-        <div class="control-module controls-summary-module">
+      <!-- ==================================================================== -->
+      <!-- BARRE INFÉRIEURE : DOCK DE 5 CARTES EXACTEMENT COMME IMAGE 2         -->
+      <!-- ==================================================================== -->
+      <section class="control-dock" aria-label="Commandes et paramètres">
+        <!-- 1. MODES & CONTRÔLES -->
+        <div class="control-module module-modes">
           <div class="module-heading"><span class="module-icon">🎮</span><span>Modes & Contrôles</span></div>
-          <div class="mode-toggle-group" role="group" aria-label="Mode de pilotage">
-            <button class="mode-btn active" type="button" id="btn-mode-ai" title="Mode IA Autonome (Touche M)"><span class="mode-btn-icon">🤖</span>Mode IA</button>
-            <button class="mode-btn" type="button" id="btn-mode-manual" title="Mode Manuel Joueur (Touche M)"><span class="mode-btn-icon">🎮</span>Mode Manuel</button>
-          </div>
-          <div class="controls-keymap" id="keymap-ai">
-            <div class="keymap-row" id="row-key-space" title="Barre Espace (pause/reprendre)"><code id="code-key-space">Espace</code><span>pause</span></div>
-            <div class="keymap-row" id="row-key-r" title="Touche R (réinitialiser simulation)"><code id="code-key-r">R</code><span>reset</span></div>
-            <div class="keymap-row" id="row-key-b" title="Touche F3 ou B (Mode Débogage ON/OFF)"><code id="code-key-b">F3 / B</code><span>débogage</span></div>
-            <div class="keymap-row" id="row-key-m" title="Touche M (Basculer IA / Manuel)"><code id="code-key-m">M</code><span>mode</span></div>
-            <div class="keymap-row" id="row-key-n" title="Touche N (Voir Réseau de Neurones)"><code id="code-key-n">N</code><span>neurones</span></div>
-          </div>
-          <div class="controls-keymap manual-keymap hidden" id="keymap-manual">
-            <div class="keymap-row" title="Accélérer / Tourner / Freiner"><code>ZQSD / ↑←↓→</code><span>piloter</span></div>
-            <div class="keymap-row" title="Freinage renforcé"><code>Espace</code><span>frein</span></div>
-            <div class="keymap-row" title="Remettre la voiture sur la piste"><code>R</code><span>replacer</span></div>
-            <div class="keymap-row" title="Revenir au Mode IA"><code>M</code><span>retour IA</span></div>
+          <div class="mode-toggle-group">
+            <button class="mode-btn active" id="btn-mode-ai" type="button"><span class="btn-symbol">🤖</span> Mode IA</button>
+            <button class="mode-btn" id="btn-mode-manual" type="button"><span class="btn-symbol">🎮</span> Mode Manuel</button>
           </div>
           <div class="cam-modes-row">
-            <span class="cam-label">Caméra:</span>
-            <button class="cam-btn active" type="button" id="btn-cam-free" title="Vue globale du circuit (réinitialiser caméra et afficher tout le circuit)">⛶ Vue globale</button>
-            <button class="cam-btn" type="button" id="btn-cam-3d" title="Vue 3D Isométrique Haute Performance (sans lag)">📐 Vue 3D</button>
-            <button class="cam-btn" type="button" id="btn-cam-follow" title="Suivi de la voiture (3ème personne)">🏎️ Suivi</button>
+            <button class="cam-btn active" id="btn-cam-free" type="button">🌐 Vue globale</button>
+            <button class="cam-btn" id="btn-cam-follow" type="button">🏎️ Suivi</button>
+          </div>
+          <div class="cam-sub-row">
+            <span class="key-badge" title="Touche F3 ou B">F3 / B</span>
+            <button class="quick-pause-btn" id="btn-quick-pause" type="button">⏸ Pause <small>Espace</small></button>
           </div>
         </div>
 
-        <!-- MODULE 2 : INFORMATIONS DU VÉHICULE & BOUSSOLE -->
-        <div class="control-module vehicle-info-module">
-          <div class="module-heading"><span class="module-icon">🏎</span><span>Infos Véhicule</span></div>
-          <div class="vehicle-info-content">
-            <div class="vehicle-silhouette-box">
-              <span class="gt3-side-icon">🏎</span>
-              <div class="veh-telemetry-metrics">
-                <div><span>Vitesse:</span><b id="vehicle-speed-val">142 km/h</b></div>
-                <div><span>Position:</span><b id="vehicle-pos-val">1 / 100</b></div>
-                <div><span>Tour:</span><b id="vehicle-lap-val">2 / 3</b></div>
+        <!-- 2. INFOS VÉHICULE -->
+        <div class="control-module module-vehicle">
+          <div class="module-heading"><span class="module-icon">🚗</span><span>Infos Véhicule</span><span class="heading-close">✕</span></div>
+          <div class="veh-body-wrap">
+            <div class="veh-top-row">
+              <div class="veh-img-box">
+                <img src="assets/bmw_m4_gt3.jpg" class="veh-preview-img" alt="BMW M4 GT3" />
+              </div>
+              <div class="veh-stats-box">
+                <div class="veh-car-title">BMW M4 GT3 #01</div>
+                <div class="veh-stat-line"><span>Vitesse</span><b id="vehicle-speed-val">0.0 km/h</b></div>
+                <div class="veh-stat-line"><span>Position</span><b id="vehicle-pos-val">1 / 20</b></div>
+                <div class="veh-stat-line"><span>Tour</span><b id="vehicle-lap-val">0 / 3</b></div>
               </div>
             </div>
-            <div class="compass-box">
-              <span class="compass-caption">Direction</span>
-              <div class="compass-dial">
-                <div id="vehicle-compass-needle" class="compass-needle" style="transform: rotate(48deg);"></div>
-                <div class="compass-dial-rim"></div>
+            <div class="veh-bottom-bars">
+              <div class="veh-bar-row">
+                <span class="veh-bar-lbl">CARBURANT <b>100%</b></span>
+                <div class="veh-bar-track"><div class="veh-bar-fill bar-fuel" style="width: 100%;"></div></div>
+                <span class="veh-stage-pill" id="veh-stage-badge">STAGE 2</span>
               </div>
-              <b id="vehicle-heading-val">48°</b>
+              <div class="veh-bar-row">
+                <span class="veh-bar-lbl">ÉTAT <b>100%</b></span>
+                <div class="veh-bar-track"><div class="veh-bar-fill bar-health" style="width: 100%;"></div></div>
+                <span class="veh-val-pill">100%</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- MODULE 3 : TRAJECTOIRES ET SYMBOLES -->
-        <div class="control-module trajectories-module">
-          <div class="module-heading"><span class="module-icon">↝</span><span>Trajectoires</span></div>
-          <div class="trajectories-legend-grid">
-            <div class="traj-item"><span class="traj-line traj-real"></span><span>Trajectoire réelle</span></div>
-            <div class="traj-item"><span class="traj-line traj-desired"></span><span>Trajectoire désirée</span></div>
-            <div class="traj-item"><span class="traj-arrow">➜</span><span>Force de steering</span></div>
-            <div class="traj-item"><span class="traj-target">◎</span><span>Cible (circuit)</span></div>
+        <!-- 3. TRAJECTOIRES & CAPTEURS -->
+        <div class="control-module module-trajectories">
+          <div class="module-heading"><span class="module-icon">📐</span><span>Trajectoires & Capteurs</span></div>
+          <div class="traj-checklist">
+            <label class="traj-check-item">
+              <input type="checkbox" id="chk-traj-real" checked />
+              <span class="traj-line traj-real"></span>
+              <span>Trajectoire idéale</span>
+            </label>
+            <label class="traj-check-item">
+              <input type="checkbox" id="chk-traj-desired" checked />
+              <span class="traj-line traj-desired"></span>
+              <span>Trajectoire désirée</span>
+            </label>
+            <label class="traj-check-item">
+              <input type="checkbox" id="chk-traj-force" checked />
+              <span class="traj-arrow">➔</span>
+              <span>Force de steering</span>
+            </label>
+            <label class="traj-check-item">
+              <input type="checkbox" id="chk-traj-target" />
+              <span class="traj-target">🎯</span>
+              <span>Cible (circuit)</span>
+            </label>
+          </div>
+          <div class="traj-actions-row">
+            <button class="traj-btn" id="btn-toggle-sensors" type="button">📡 Capteurs</button>
+            <button class="traj-btn" id="btn-toggle-all-viz" type="button">👁 Afficher tout</button>
           </div>
         </div>
 
-        <!-- MODULE 4 : PARAMÈTRES IA & STEERING BEHAVIORS -->
-        <div class="control-module steering-params-module">
-          <div class="module-heading"><span class="module-icon">⚙</span><span>Paramètres IA (Steering)</span></div>
-          <div class="steering-sliders-grid">
-            <div class="st-slider-row">
-              <label for="slider-maxspeed">Vitesse max:<b id="val-maxspeed">180</b></label>
+        <!-- 4. PARAMÈTRES IA / STEERING (TOUS LES BOUTONS RESTAURÉS) -->
+        <div class="control-module module-steering">
+          <div class="module-heading"><span class="module-icon">🌿</span><span>Paramètres IA / Steering</span></div>
+          <div class="steering-sliders-list">
+            <div class="st-slider-line">
+              <span>Vitesse max</span>
               <input type="range" id="slider-maxspeed" class="custom-slider mini-slider" min="60" max="240" step="5" value="180" />
+              <b id="val-maxspeed">1.80</b>
             </div>
-            <div class="st-slider-row">
-              <label for="slider-maxforce">Force steering:<b id="val-maxforce">1.8</b></label>
-              <input type="range" id="slider-maxforce" class="custom-slider mini-slider" min="0.5" max="3.5" step="0.1" value="1.8" />
-            </div>
-            <div class="st-slider-row">
-              <label for="slider-separation-radius">Rayon évitement:<b id="val-separation-radius">70</b></label>
+            <div class="st-slider-line">
+              <span>Rayon d'évitement</span>
               <input type="range" id="slider-separation-radius" class="custom-slider mini-slider" min="20" max="120" step="5" value="70" />
+              <b id="val-separation-radius">70</b>
             </div>
-            <div class="st-slider-row">
-              <label for="slider-weight-seek">Poids Seek:<b id="val-weight-seek">1.0</b></label>
-              <input type="range" id="slider-weight-seek" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.0" />
-            </div>
-            <div class="st-slider-row">
-              <label for="slider-weight-sep">Poids Separation:<b id="val-weight-sep">1.2</b></label>
+            <div class="st-slider-line">
+              <span>Poids séparation</span>
               <input type="range" id="slider-weight-sep" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.2" />
+              <b id="val-weight-sep">1.2</b>
             </div>
-            <div class="st-slider-row">
-              <label for="slider-weight-avoid">Poids Avoidance:<b id="val-weight-avoid">1.6</b></label>
-              <input type="range" id="slider-weight-avoid" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.6" />
+            <div class="st-slider-line">
+              <span>Poids alignement</span>
+              <input type="range" id="slider-weight-align" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.0" />
+              <b id="val-weight-align">1.0</b>
             </div>
-          </div>
-          <div class="steering-checkboxes-row">
-            <label class="st-check"><input type="checkbox" id="chk-seek" checked /><span>Seek</span></label>
-            <label class="st-check"><input type="checkbox" id="chk-separation" checked /><span>Separation</span></label>
-            <label class="st-check"><input type="checkbox" id="chk-avoidance" checked /><span>Avoidance</span></label>
-            <label class="st-check"><input type="checkbox" id="chk-alignment" checked /><span>Align</span></label>
-            <label class="st-check"><input type="checkbox" id="chk-cohesion" checked /><span>Cohesion</span></label>
+            <div class="st-slider-line">
+              <span>Poids cohésion</span>
+              <input type="range" id="slider-weight-cohesion" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.0" />
+              <b id="val-weight-cohesion">1.0</b>
           </div>
         </div>
 
-        <!-- MODULE 5 : ACTIONS SIMULATION PRINCIPALE -->
-        <div class="dock-actions control-module">
-          <div class="module-heading"><span class="module-icon">◫</span><span>Simulation</span></div>
-          <div class="action-row">
-            <button class="action-button action-primary" id="btn-pause" type="button" title="Mettre en pause ou reprendre la simulation"><span class="action-symbol" id="pause-icon" aria-hidden="true">Ⅱ</span><span id="btn-pause-text">Pause</span></button>
-            <button class="action-button" id="btn-reset" type="button" title="Réinitialiser la population sur le stage actuel"><span class="action-symbol" aria-hidden="true">↻</span><span>Reset</span></button>
-            <button class="action-button" id="btn-new-track" type="button" title="Renouveler le tracé aléatoire ou recharger"><span class="action-symbol" aria-hidden="true">⌁</span><span>Nouveau circuit</span></button>
+        <!-- 5. SIMULATION -->
+        <div class="control-module module-simulation">
+          <div class="module-heading"><span class="module-icon">⚙️</span><span>Simulation</span></div>
+          <div class="sim-main-actions">
+            <button class="sim-act-btn sim-primary" id="btn-pause" type="button" title="Mettre en pause ou reprendre la course">
+              <span class="sim-btn-icon" id="pause-icon">⏸</span>
+              <span id="btn-pause-text">Pause</span>
+            </button>
+            <button class="sim-act-btn" id="btn-reset" type="button" title="Réinitialiser la course">
+              <span class="sim-btn-icon">🔄</span>
+              <span>Reset</span>
+            </button>
+            <button class="sim-act-btn" id="btn-new-track" type="button" title="Charger un nouveau circuit">
+              <span class="sim-btn-icon">🎲</span>
+              <span>Nouveau circuit</span>
+            </button>
           </div>
-          <div class="mode-options" role="group" aria-label="Mode de circuit">
-            <button class="mode-option active" id="btn-mode-training" type="button">Entraînement</button>
-            <button class="mode-option" id="btn-mode-challenge" type="button">Défi aléatoire</button>
+          <div class="sim-sub-actions">
+            <button class="sim-opt-btn active" id="btn-mode-training" type="button">🎓 Entraînement</button>
+            <button class="sim-opt-btn" id="btn-mode-challenge" type="button">🎲 Défi aléatoire</button>
           </div>
-          <span class="module-note" id="track-mode-desc">Tracé fixe du stage sélectionné ; scores comparables.</span>
-        </div>
-
-        <!-- MODULE 6 : PARAMÈTRES CADENCE & POPULATION -->
-        <div class="control-module slider-module simulation-params-module">
-          <div class="module-heading"><span class="module-icon">◴</span><span>Cadence & Flotte</span></div>
-          <div class="sim-sliders-grid">
-            <div class="sim-slider-col">
-              <label class="slider-inline-label" for="slider-speed"><span>Vitesse:</span><b id="val-speed">1×</b></label>
-              <input type="range" id="slider-speed" class="custom-slider mini-slider" min="1" max="20" step="1" value="1" aria-label="Vitesse de simulation" />
-              <div class="range-scale"><span>1×</span><span>20×</span></div>
-
-              <label class="slider-inline-label" for="slider-mutation"><span>Mutation:</span><b id="val-mutation">8%</b></label>
-              <input type="range" id="slider-mutation" class="custom-slider mini-slider" min="0" max="50" step="1" value="8" aria-label="Taux de mutation génétique" />
-              <div class="range-scale"><span>0%</span><span>50%</span></div>
-            </div>
-            <div class="sim-slider-col">
-              <label class="slider-inline-label" for="slider-sight"><span>Capteurs:</span><b id="val-sight">100 px</b></label>
-              <input type="range" id="slider-sight" class="custom-slider mini-slider" min="30" max="200" step="5" value="100" aria-label="Portée des capteurs" />
-              <div class="range-scale"><span>30 px</span><span>200 px</span></div>
-
-              <label class="slider-inline-label" for="slider-population"><span>Population:</span><b id="val-population">100</b></label>
-              <input type="range" id="slider-population" class="custom-slider mini-slider" min="20" max="200" step="10" value="100" aria-label="Taille de la population suivante" />
-              <div class="range-scale"><span>20</span><span>200</span></div>
-            </div>
+          <div class="sim-status-footer">
+            <span class="status-indicator-dot">●</span>
+            <span id="track-mode-desc">Trace logs · IA active · 20 voitures · 60 FPS</span>
           </div>
         </div>
       </section>
-
-      <!-- PIED DE PAGE SCIENTIFIQUE FUTURISTE -->
-      <footer class="app-footer">
-        <div class="footer-tags">
-          <span class="footer-tag"><i class="tag-dot">●</i> IA réactive</span>
-          <span class="footer-tag"><i class="tag-dot">●</i> Algorithmes génétiques</span>
-          <span class="footer-tag"><i class="tag-dot">●</i> Réseaux de neurones</span>
-        </div>
-        <div class="footer-slogan">Des voitures autonomes, un seul objectif : le meilleur tour !</div>
-      </footer>
     </main>
 
     <!-- ==================================================================== -->
@@ -912,5 +834,69 @@
     <script src="vehicle.js?v=4.0"></script>
     <script src="circuits.js?v=4.0"></script>
     <script src="sketch.js?v=4.0"></script>
-  </body>
+  
+  <script>
+    // Tab switcher & Image 2 bindings
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = [
+        { btn: 'tab-btn-telemetry', cards: ['card-veh-telemetry', 'card-sensors-env', 'card-ai-params'] },
+        { btn: 'tab-btn-perception', cards: ['card-sensors-env'] },
+        { btn: 'tab-btn-evolution', cards: ['card-evolution-graph'] },
+        { btn: 'tab-btn-shap', cards: ['card-ai-params'] }
+      ];
+
+      tabs.forEach(t => {
+        const b = document.getElementById(t.btn);
+        if (b) {
+          b.addEventListener('click', () => {
+            document.querySelectorAll('.tel-tab-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            ['card-veh-telemetry', 'card-sensors-env', 'card-ai-params', 'card-evolution-graph'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.classList.toggle('hidden', !t.cards.includes(id));
+            });
+          });
+        }
+      });
+
+      // Topbar START PROCEDURE button
+      const topStart = document.getElementById('btn-topbar-start');
+      if (topStart) {
+        topStart.addEventListener('click', () => {
+          if (typeof FormulaRacingSystem !== 'undefined' && typeof FormulaRacingSystem.startCountdownProcedure === 'function') {
+            FormulaRacingSystem.startCountdownProcedure();
+          } else {
+            const startBtn = document.getElementById('btn-start-race-now');
+            if (startBtn) startBtn.click();
+          }
+        });
+      }
+
+      // Topbar MODE toggle
+      const topMode = document.getElementById('btn-topbar-mode');
+      if (topMode) {
+        topMode.addEventListener('click', () => {
+          const btnAi = document.getElementById('btn-mode-ai');
+          const btnMan = document.getElementById('btn-mode-manual');
+          if (btnAi && btnMan) {
+            if (btnAi.classList.contains('active')) btnMan.click();
+            else btnAi.click();
+          }
+        });
+      }
+
+      // Quick pause button in dock
+      const qp = document.getElementById('btn-quick-pause');
+      if (qp) {
+        qp.addEventListener('click', () => {
+          const p = document.getElementById('btn-pause');
+          if (p) p.click();
+        });
+      }
+
+
+    });
+  </script>
+  
+</body>
 </html>

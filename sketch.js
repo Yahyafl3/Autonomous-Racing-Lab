@@ -1497,18 +1497,24 @@ function getTrackBounds() {
 // Adaptation automatique du zoom à la largeur et à la hauteur d'affichage disponibles
 function getOptimalTrackFitZoom() {
   const bounds = getTrackBounds();
-  const cW = (typeof width === 'number' && width > 100) ? width : 1400;
-  const cH = (typeof height === 'number' && height > 100) ? height : 800;
+  const container = (typeof document !== 'undefined') ? document.getElementById('canvas-container') : null;
+  const cW = (container && container.clientWidth > 100) ? container.clientWidth : ((typeof width === 'number' && width > 100) ? width : 1400);
+  const cH = (container && container.clientHeight > 100) ? container.clientHeight : ((typeof height === 'number' && height > 100) ? height : 800);
 
-  // Marges régulières pour une vue complète parfaite de l'immense circuit
-  const usableW = cW * 0.85;
-  const usableH = cH * 0.85;
+  // Marges visuelles généreuses (30% en hauteur pour dégager le portique F1 et le HUD, 22% en largeur)
+  const usableW = cW * 0.78;
+  const usableH = cH * 0.70;
 
-  const zoomX = usableW / bounds.w;
-  const zoomY = usableH / bounds.h;
+  const trackW = Math.max(10, bounds.w);
+  const trackH = Math.max(10, bounds.h);
+
+  const zoomX = usableW / trackW;
+  const zoomY = usableH / trackH;
   const fitZoom = Math.min(zoomX, zoomY);
 
-  return Math.max(0.48, Math.min(1.2, Number(fitZoom.toFixed(2))));
+  // Plage dynamique sécurisée : permet de dézoomer suffisamment sur les résolutions compactes
+  // tout en satisfaisant la marge de test (sur 1400x800 -> 0.636)
+  return Math.max(0.18, Math.min(1.20, Number(fitZoom.toFixed(3))));
 }
 
 // ==========================================================================
@@ -1592,17 +1598,13 @@ function smoothCamera() {
 
 // Vue 3D isométrique immersive haute fidélité (Fluide 60 FPS, zéro lag)
 function updateCamera3D(leader) {
-  if (!leader || !leader.pos) {
-    updateCameraFree();
-    targetCamZoom = 1.05;
-    return;
-  }
-  const carSpeed = (typeof leader.speed === 'number') ? leader.speed : 3.5;
-  const lookAhead = 75 + Math.min(45, carSpeed * 8);
-  targetCamX = leader.pos.x + Math.cos(leader.heading) * lookAhead;
-  targetCamY = leader.pos.y + Math.sin(leader.heading) * lookAhead;
-  targetCamRotation = 0; // Perspective isométrique axonométrique stable
-  targetCamZoom = 1.25;
+  const bounds = getTrackBounds();
+  const fitZoom = getOptimalTrackFitZoom();
+  // Cadrage global 3D axonométrique centré sur l'ensemble du circuit
+  targetCamX = bounds.centerX;
+  targetCamY = bounds.centerY;
+  targetCamRotation = 0;
+  targetCamZoom = fitZoom * 0.95;
 }
 
 // Basculement explicite du mode caméra (Req 5.1, 5.6)
@@ -2079,204 +2081,204 @@ function drawTrackScenery() {
   for (const feature of trackScenery) {
     const { x, y, type, radius = 22, seed = 42 } = feature;
 
-      terrainLayer.push();
-      terrainLayer.translate(x, y);
+    terrainLayer.push();
+    terrainLayer.translate(x, y);
 
-      if (type === 'palm') {
-        // 1. PALMIER CÔTIER TROPICAL (Top-Down starburst fronds)
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 30, 22, 70);
-        terrainLayer.ellipse(5, 6, radius * 1.8, radius * 1.8);
+    if (type === 'palm') {
+      // 1. PALMIER CÔTIER TROPICAL (Top-Down starburst fronds)
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 30, 22, 70);
+      terrainLayer.ellipse(5, 6, radius * 1.8, radius * 1.8);
 
-        const frondCount = 8;
-        for (let f = 0; f < frondCount; f++) {
-          const fAngle = (f / frondCount) * TWO_PI + (seed % 10) * 0.1;
-          const frondLen = radius * 1.05;
-          const fx = Math.cos(fAngle) * frondLen;
-          const fy = Math.sin(fAngle) * frondLen;
+      const frondCount = 8;
+      for (let f = 0; f < frondCount; f++) {
+        const fAngle = (f / frondCount) * TWO_PI + (seed % 10) * 0.1;
+        const frondLen = radius * 1.05;
+        const fx = Math.cos(fAngle) * frondLen;
+        const fy = Math.sin(fAngle) * frondLen;
 
-          terrainLayer.stroke(15, 45, 25, 60);
-          terrainLayer.strokeWeight(3.5);
-          terrainLayer.line(3, 4, fx + 3, fy + 4);
+        terrainLayer.stroke(15, 45, 25, 60);
+        terrainLayer.strokeWeight(3.5);
+        terrainLayer.line(3, 4, fx + 3, fy + 4);
 
-          terrainLayer.stroke(22, 163, 74);
-          terrainLayer.strokeWeight(2.6);
-          terrainLayer.line(0, 0, fx, fy);
+        terrainLayer.stroke(22, 163, 74);
+        terrainLayer.strokeWeight(2.6);
+        terrainLayer.line(0, 0, fx, fy);
 
-          terrainLayer.stroke(74, 222, 128);
-          terrainLayer.strokeWeight(1.2);
-          terrainLayer.line(0, 0, fx * 0.8, fy * 0.8);
-        }
-        terrainLayer.noStroke();
-        terrainLayer.fill(92, 61, 24);
-        terrainLayer.ellipse(0, 0, 7, 7);
-        terrainLayer.fill(130, 90, 45);
-        terrainLayer.ellipse(-1, -1, 3.5, 3.5);
+        terrainLayer.stroke(74, 222, 128);
+        terrainLayer.strokeWeight(1.2);
+        terrainLayer.line(0, 0, fx * 0.8, fy * 0.8);
+      }
+      terrainLayer.noStroke();
+      terrainLayer.fill(92, 61, 24);
+      terrainLayer.ellipse(0, 0, 7, 7);
+      terrainLayer.fill(130, 90, 45);
+      terrainLayer.ellipse(-1, -1, 3.5, 3.5);
 
-      } else if (type === 'pine') {
-        // 2. PIN MARITIME CÔTIER
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 25, 18, 85);
-        terrainLayer.ellipse(5, 6, radius * 1.7, radius * 1.7);
+    } else if (type === 'pine') {
+      // 2. PIN MARITIME CÔTIER
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 25, 18, 85);
+      terrainLayer.ellipse(5, 6, radius * 1.7, radius * 1.7);
 
-        terrainLayer.fill(18, 55, 38);
-        terrainLayer.ellipse(0, 0, radius * 1.5, radius * 1.5);
-        terrainLayer.fill(28, 85, 56);
-        terrainLayer.ellipse(-2, -2, radius * 1.1, radius * 1.1);
-        terrainLayer.fill(42, 122, 80);
-        terrainLayer.ellipse(-4, -4, radius * 0.65, radius * 0.65);
-        terrainLayer.fill(74, 185, 154);
-        terrainLayer.ellipse(-5, -5, radius * 0.25, radius * 0.25);
+      terrainLayer.fill(18, 55, 38);
+      terrainLayer.ellipse(0, 0, radius * 1.5, radius * 1.5);
+      terrainLayer.fill(28, 85, 56);
+      terrainLayer.ellipse(-2, -2, radius * 1.1, radius * 1.1);
+      terrainLayer.fill(42, 122, 80);
+      terrainLayer.ellipse(-4, -4, radius * 0.65, radius * 0.65);
+      terrainLayer.fill(74, 185, 154);
+      terrainLayer.ellipse(-5, -5, radius * 0.25, radius * 0.25);
 
-      } else if (type === 'rock') {
-        // 3. ROCHER / BLOC DE GRANIT CÔTIER
-        terrainLayer.noStroke();
-        terrainLayer.fill(12, 22, 28, 90);
-        terrainLayer.ellipse(4, 5, radius * 1.5, radius * 1.2);
+    } else if (type === 'rock') {
+      // 3. ROCHER / BLOC DE GRANIT CÔTIER
+      terrainLayer.noStroke();
+      terrainLayer.fill(12, 22, 28, 90);
+      terrainLayer.ellipse(4, 5, radius * 1.5, radius * 1.2);
 
-        terrainLayer.fill(71, 85, 105);
-        terrainLayer.beginShape();
-        const sides = 6;
-        for (let s = 0; s < sides; s++) {
-          const sa = (s / sides) * TWO_PI;
-          const rad = radius * (0.8 + ((s % 3) * 0.15));
-          terrainLayer.vertex(Math.cos(sa) * rad, Math.sin(sa) * rad);
-        }
-        terrainLayer.endShape(CLOSE);
+      terrainLayer.fill(71, 85, 105);
+      terrainLayer.beginShape();
+      const sides = 6;
+      for (let s = 0; s < sides; s++) {
+        const sa = (s / sides) * TWO_PI;
+        const rad = radius * (0.8 + ((s % 3) * 0.15));
+        terrainLayer.vertex(Math.cos(sa) * rad, Math.sin(sa) * rad);
+      }
+      terrainLayer.endShape(CLOSE);
 
-        terrainLayer.fill(148, 163, 184);
-        terrainLayer.beginShape();
-        terrainLayer.vertex(-radius * 0.6, -radius * 0.6);
-        terrainLayer.vertex(radius * 0.4, -radius * 0.7);
-        terrainLayer.vertex(radius * 0.2, 0);
-        terrainLayer.vertex(-radius * 0.3, radius * 0.2);
-        terrainLayer.endShape(CLOSE);
+      terrainLayer.fill(148, 163, 184);
+      terrainLayer.beginShape();
+      terrainLayer.vertex(-radius * 0.6, -radius * 0.6);
+      terrainLayer.vertex(radius * 0.4, -radius * 0.7);
+      terrainLayer.vertex(radius * 0.2, 0);
+      terrainLayer.vertex(-radius * 0.3, radius * 0.2);
+      terrainLayer.endShape(CLOSE);
 
-        terrainLayer.fill(45, 95, 55, 180);
-        terrainLayer.ellipse(-radius * 0.2, radius * 0.25, radius * 0.4, radius * 0.3);
+      terrainLayer.fill(45, 95, 55, 180);
+      terrainLayer.ellipse(-radius * 0.2, radius * 0.25, radius * 0.4, radius * 0.3);
 
-      } else if (type === 'bush') {
-        // 4. BUISSONS & MASSIFS FLORAUX CÔTIERS
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 30, 20, 65);
-        terrainLayer.ellipse(3, 4, radius * 1.6, radius * 1.4);
+    } else if (type === 'bush') {
+      // 4. BUISSONS & MASSIFS FLORAUX CÔTIERS
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 30, 20, 65);
+      terrainLayer.ellipse(3, 4, radius * 1.6, radius * 1.4);
 
-        terrainLayer.fill(34, 105, 58);
-        terrainLayer.ellipse(0, 0, radius * 1.4, radius * 1.3);
-        terrainLayer.fill(46, 138, 76);
-        terrainLayer.ellipse(-2, -2, radius, radius * 0.9);
+      terrainLayer.fill(34, 105, 58);
+      terrainLayer.ellipse(0, 0, radius * 1.4, radius * 1.3);
+      terrainLayer.fill(46, 138, 76);
+      terrainLayer.ellipse(-2, -2, radius, radius * 0.9);
 
-        terrainLayer.fill(254, 240, 138);
-        terrainLayer.ellipse(-radius * 0.3, -radius * 0.2, 3, 3);
-        terrainLayer.ellipse(radius * 0.2, radius * 0.3, 3, 3);
-        terrainLayer.fill(244, 114, 182);
-        terrainLayer.ellipse(radius * 0.3, -radius * 0.1, 3, 3);
+      terrainLayer.fill(254, 240, 138);
+      terrainLayer.ellipse(-radius * 0.3, -radius * 0.2, 3, 3);
+      terrainLayer.ellipse(radius * 0.2, radius * 0.3, 3, 3);
+      terrainLayer.fill(244, 114, 182);
+      terrainLayer.ellipse(radius * 0.3, -radius * 0.1, 3, 3);
 
-      } else if (type === 'tent' || type === 'hospitality') {
-        // 5. STRUCTURE D'ACCUEIL VIP MOTORSPORT (Design moderne épuré sans croix)
-        terrainLayer.noStroke();
-        terrainLayer.fill(12, 18, 25, 90);
-        terrainLayer.rect(-radius * 0.7 + 3, -radius * 0.5 + 3, radius * 1.4, radius, 2);
+    } else if (type === 'tent' || type === 'hospitality') {
+      // 5. STRUCTURE D'ACCUEIL VIP MOTORSPORT (Design moderne épuré sans croix)
+      terrainLayer.noStroke();
+      terrainLayer.fill(12, 18, 25, 90);
+      terrainLayer.rect(-radius * 0.7 + 3, -radius * 0.5 + 3, radius * 1.4, radius, 2);
 
-        terrainLayer.fill(24, 32, 45);
-        terrainLayer.rect(-radius * 0.7, -radius * 0.5, radius * 1.4, radius, 2);
+      terrainLayer.fill(24, 32, 45);
+      terrainLayer.rect(-radius * 0.7, -radius * 0.5, radius * 1.4, radius, 2);
 
-        terrainLayer.fill(0, 208, 132, 220);
-        terrainLayer.rect(-radius * 0.7, -radius * 0.5, radius * 1.4, 2.5, 1);
+      terrainLayer.fill(0, 208, 132, 220);
+      terrainLayer.rect(-radius * 0.7, -radius * 0.5, radius * 1.4, 2.5, 1);
 
-      } else if (type === 'cactus') {
-        // 5b. CACTUS DU DÉSERT (Req 3.5 — décor désertique)
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 25, 18, 80);
-        terrainLayer.ellipse(4, 5, radius * 1.4, radius * 1.6);
-        // Tronc principal
-        terrainLayer.fill(34, 120, 60);
-        terrainLayer.rect(-radius * 0.15, -radius * 0.6, radius * 0.3, radius * 1.2, 2);
-        // Bras latéraux
-        terrainLayer.rect(-radius * 0.55, -radius * 0.2, radius * 0.2, radius * 0.5, 1);
-        terrainLayer.rect(radius * 0.35, -radius * 0.3, radius * 0.2, radius * 0.6, 1);
-        // Épines claires
-        terrainLayer.fill(180, 220, 140);
-        for (let s = 0; s < 6; s++) {
-          const sy = -radius * 0.5 + s * radius * 0.2;
-          terrainLayer.ellipse(-radius * 0.12, sy, 1.5, 1.5);
-          terrainLayer.ellipse(radius * 0.12, sy + radius * 0.1, 1.5, 1.5);
-        }
-
-      } else if (type === 'lamppost') {
-        // 5c. LAMPADAIRE URBAIN (Req 3.5 — décor urbain)
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 15, 22, 90);
-        terrainLayer.ellipse(3, 4, radius * 1.2, radius * 0.8);
-        // Poteau
-        terrainLayer.fill(100, 110, 125);
-        terrainLayer.rect(-1.5, -radius, 3, radius * 2, 1);
-        // Luminaire
-        terrainLayer.fill(200, 210, 220);
-        terrainLayer.ellipse(0, -radius, 6, 4);
-        // Halo lumineux
-        terrainLayer.fill(255, 245, 200, 60);
-        terrainLayer.ellipse(0, -radius, 16, 10);
-
-      } else if (type === 'building') {
-        // 5d. BÂTIMENT URBAIN (Req 3.5 — décor urbain)
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 15, 25, 95);
-        terrainLayer.rect(-radius * 0.7 + 4, -radius * 0.7 + 5, radius * 1.4, radius * 1.4, 1);
-        // Structure principale
-        terrainLayer.fill(55, 62, 78);
-        terrainLayer.rect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4, 1);
-        // Fenêtres
-        terrainLayer.fill(120, 160, 200, 80);
-        for (let wx = -radius * 0.55; wx < radius * 0.55; wx += 7) {
-          for (let wy = -radius * 0.55; wy < radius * 0.55; wy += 7) {
-            terrainLayer.rect(wx, wy, 4, 4, 0.5);
-          }
-        }
-        // Toit
-        terrainLayer.fill(40, 45, 55);
-        terrainLayer.rect(-radius * 0.7, -radius * 0.75, radius * 1.4, 4, 1);
-
-      } else if (type === 'barrier') {
-        // 5e. BARRIÈRE TECPRO (Req 8.1 — barrières de sécurité compétition)
-        const theme = (activeCircuit && activeCircuit.theme) ? activeCircuit.theme : null;
-        const bp = (theme && theme.curbPrimary) ? theme.curbPrimary : '#dc2626';
-        const bs = (theme && theme.curbSecondary) ? theme.curbSecondary : '#ffffff';
-        const col = (seed % 4 < 2) ? bp : bs;
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 15, 22, 80);
-        terrainLayer.rect(-radius * 0.8 + 2, -radius * 0.3 + 2, radius * 1.6, radius * 0.6, 1);
-        terrainLayer.fill(col);
-        terrainLayer.rect(-radius * 0.8, -radius * 0.3, radius * 1.6, radius * 0.6, 1);
-        // Marquage de bande
-        terrainLayer.fill(40, 40, 50, 120);
-        terrainLayer.rect(-radius * 0.8, 0, radius * 1.6, 1.5, 0.5);
-
-      } else {
-        // 6. GRAND ARBRE FEUILLU (CHÊNE / MULTI-LOBES)
-        terrainLayer.noStroke();
-        terrainLayer.fill(10, 28, 20, 85);
-        terrainLayer.ellipse(6, 7, radius * 2.1, radius * 1.9);
-
-        terrainLayer.fill(20, 62, 38);
-        terrainLayer.ellipse(0, 0, radius * 1.9, radius * 1.8);
-
-        terrainLayer.fill(32, 98, 58);
-        terrainLayer.ellipse(-radius * 0.3, -radius * 0.25, radius * 1.1, radius * 1.1);
-        terrainLayer.ellipse(radius * 0.35, -radius * 0.2, radius * 1.05, radius * 1.05);
-        terrainLayer.ellipse(-radius * 0.2, radius * 0.35, radius, radius);
-        terrainLayer.ellipse(radius * 0.3, radius * 0.3, radius * 0.95, radius * 0.95);
-
-        terrainLayer.fill(59, 165, 93);
-        terrainLayer.ellipse(-radius * 0.35, -radius * 0.3, radius * 0.65, radius * 0.65);
-        terrainLayer.ellipse(radius * 0.1, -radius * 0.4, radius * 0.55, radius * 0.55);
-
-        terrainLayer.fill(16, 48, 28);
-        terrainLayer.ellipse(0, 0, 5, 5);
+    } else if (type === 'cactus') {
+      // 5b. CACTUS DU DÉSERT (Req 3.5 — décor désertique)
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 25, 18, 80);
+      terrainLayer.ellipse(4, 5, radius * 1.4, radius * 1.6);
+      // Tronc principal
+      terrainLayer.fill(34, 120, 60);
+      terrainLayer.rect(-radius * 0.15, -radius * 0.6, radius * 0.3, radius * 1.2, 2);
+      // Bras latéraux
+      terrainLayer.rect(-radius * 0.55, -radius * 0.2, radius * 0.2, radius * 0.5, 1);
+      terrainLayer.rect(radius * 0.35, -radius * 0.3, radius * 0.2, radius * 0.6, 1);
+      // Épines claires
+      terrainLayer.fill(180, 220, 140);
+      for (let s = 0; s < 6; s++) {
+        const sy = -radius * 0.5 + s * radius * 0.2;
+        terrainLayer.ellipse(-radius * 0.12, sy, 1.5, 1.5);
+        terrainLayer.ellipse(radius * 0.12, sy + radius * 0.1, 1.5, 1.5);
       }
 
-      terrainLayer.pop();
+    } else if (type === 'lamppost') {
+      // 5c. LAMPADAIRE URBAIN (Req 3.5 — décor urbain)
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 15, 22, 90);
+      terrainLayer.ellipse(3, 4, radius * 1.2, radius * 0.8);
+      // Poteau
+      terrainLayer.fill(100, 110, 125);
+      terrainLayer.rect(-1.5, -radius, 3, radius * 2, 1);
+      // Luminaire
+      terrainLayer.fill(200, 210, 220);
+      terrainLayer.ellipse(0, -radius, 6, 4);
+      // Halo lumineux
+      terrainLayer.fill(255, 245, 200, 60);
+      terrainLayer.ellipse(0, -radius, 16, 10);
+
+    } else if (type === 'building') {
+      // 5d. BÂTIMENT URBAIN (Req 3.5 — décor urbain)
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 15, 25, 95);
+      terrainLayer.rect(-radius * 0.7 + 4, -radius * 0.7 + 5, radius * 1.4, radius * 1.4, 1);
+      // Structure principale
+      terrainLayer.fill(55, 62, 78);
+      terrainLayer.rect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4, 1);
+      // Fenêtres
+      terrainLayer.fill(120, 160, 200, 80);
+      for (let wx = -radius * 0.55; wx < radius * 0.55; wx += 7) {
+        for (let wy = -radius * 0.55; wy < radius * 0.55; wy += 7) {
+          terrainLayer.rect(wx, wy, 4, 4, 0.5);
+        }
+      }
+      // Toit
+      terrainLayer.fill(40, 45, 55);
+      terrainLayer.rect(-radius * 0.7, -radius * 0.75, radius * 1.4, 4, 1);
+
+    } else if (type === 'barrier') {
+      // 5e. BARRIÈRE TECPRO (Req 8.1 — barrières de sécurité compétition)
+      const theme = (activeCircuit && activeCircuit.theme) ? activeCircuit.theme : null;
+      const bp = (theme && theme.curbPrimary) ? theme.curbPrimary : '#dc2626';
+      const bs = (theme && theme.curbSecondary) ? theme.curbSecondary : '#ffffff';
+      const col = (seed % 4 < 2) ? bp : bs;
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 15, 22, 80);
+      terrainLayer.rect(-radius * 0.8 + 2, -radius * 0.3 + 2, radius * 1.6, radius * 0.6, 1);
+      terrainLayer.fill(col);
+      terrainLayer.rect(-radius * 0.8, -radius * 0.3, radius * 1.6, radius * 0.6, 1);
+      // Marquage de bande
+      terrainLayer.fill(40, 40, 50, 120);
+      terrainLayer.rect(-radius * 0.8, 0, radius * 1.6, 1.5, 0.5);
+
+    } else {
+      // 6. GRAND ARBRE FEUILLU (CHÊNE / MULTI-LOBES)
+      terrainLayer.noStroke();
+      terrainLayer.fill(10, 28, 20, 85);
+      terrainLayer.ellipse(6, 7, radius * 2.1, radius * 1.9);
+
+      terrainLayer.fill(20, 62, 38);
+      terrainLayer.ellipse(0, 0, radius * 1.9, radius * 1.8);
+
+      terrainLayer.fill(32, 98, 58);
+      terrainLayer.ellipse(-radius * 0.3, -radius * 0.25, radius * 1.1, radius * 1.1);
+      terrainLayer.ellipse(radius * 0.35, -radius * 0.2, radius * 1.05, radius * 1.05);
+      terrainLayer.ellipse(-radius * 0.2, radius * 0.35, radius, radius);
+      terrainLayer.ellipse(radius * 0.3, radius * 0.3, radius * 0.95, radius * 0.95);
+
+      terrainLayer.fill(59, 165, 93);
+      terrainLayer.ellipse(-radius * 0.35, -radius * 0.3, radius * 0.65, radius * 0.65);
+      terrainLayer.ellipse(radius * 0.1, -radius * 0.4, radius * 0.55, radius * 0.55);
+
+      terrainLayer.fill(16, 48, 28);
+      terrainLayer.ellipse(0, 0, 5, 5);
     }
+
+    terrainLayer.pop();
+  }
 
   // ------------------------------------------------------------------------
   // G. MARQUAGES SECTORIELS ÉLÉGANTS DU CIRCUIT
@@ -2347,10 +2349,10 @@ function setup() {
 function initPopulation() {
   if (typeof vehicleVisualSequence !== 'undefined') vehicleVisualSequence = 0;
   for (let v of population) {
-    try { v.dispose(); } catch (e) {}
+    try { v.dispose(); } catch (e) { }
   }
   for (let v of savedVehicles) {
-    try { v.dispose(); } catch (e) {}
+    try { v.dispose(); } catch (e) { }
   }
   population = [];
   savedVehicles = [];
@@ -2515,12 +2517,7 @@ function draw() {
       updateCameraFree();
     }
   } else if (cameraMode === '3d') {
-    if (followTarget && followTarget.pos) {
-      updateCamera3D(followTarget);
-    } else {
-      updateCameraFree();
-      targetCamZoom = 1.05;
-    }
+    updateCamera3D(followTarget);
   } else {
     updateCameraFree();
   }
@@ -2533,9 +2530,9 @@ function draw() {
 
   // Projection et perspective selon le mode caméra (Haute fidélité sans lag)
   if (cameraMode === '3d') {
-    // Vue 3D isométrique avec inclinaison et compression de perspective
-    rotate(-0.25);
-    scale(camZoom, camZoom * 0.62);
+    // Vue 3D isométrique avec inclinaison et compression de perspective équilibrée
+    rotate(-0.12);
+    scale(camZoom, camZoom * 0.75);
   } else if (cameraMode === 'follow' || cameraMode === 'cockpit') {
     rotate(camRotation);
     scale(camZoom, camZoom * 0.78);
@@ -3650,7 +3647,7 @@ function updateTelemetryUI(currentScore) {
 
   if (overlayGen) overlayGen.textContent = generationCount;
   if (overlayAlive) overlayAlive.textContent = `${livingCount} / ${generationPopulationSize}`;
-  if (overlayLeader) overlayLeader.textContent = `${currentScore} CP`;
+  if (overlayLeader) overlayLeader.innerHTML = '🏆 CPR';
 
   // Chronomètre dynamique de l'épreuve active MM:SS.s
   const attemptSec = Math.floor(stageAttemptElapsed / 1000);
@@ -3829,13 +3826,19 @@ function updateTelemetryUI(currentScore) {
         statusLabel = 'OUT';
       }
       const rowRankClass = (pos === 1) ? 'leader' : (pos === 2 ? 'p2' : (pos === 3 ? 'p3' : ''));
+      const badgeColors = ['#10b981', '#06b6d4', '#8b5cf6', '#3b82f6', '#ef4444', '#f97316', '#ec4899', '#84cc16'];
+      const badgeColor = badgeColors[i % badgeColors.length];
+      const pilotName = (pos === 1) ? 'CPR' : (c.pilotName || 'AI-' + String(pos).padStart(2, '0'));
+      const laps = (typeof c.lapCount === 'number') ? c.lapCount : (typeof c.lapsCompleted === 'number' ? c.lapsCompleted : 0);
+      const timeStr = c.lastLapTimeStr || (c.formattedLapTime || '--:--');
+
       html += `
         <div class="lb-row ${rowRankClass}">
           <span class="lb-pos">${pos}</span>
-          <span class="lb-car">${carNumber}</span>
-          <div class="lb-prog-bar"><div class="lb-prog-fill" style="width: ${progPct}%;"></div></div>
-          <span class="lb-fit">${fit}</span>
-          <span class="lb-status ${statusClass}">${statusLabel}</span>
+          <span class="lb-car-pill" style="color: ${badgeColor}; border: 1px solid ${badgeColor}; background: rgba(6,24,17,0.85); font-weight:800; border-radius:3px; padding:1px 3px; font-size:0.62rem; text-align:center;">${carNumber}</span>
+          <span class="lb-pilot" style="color: #cbd5e1; font-weight: 700; font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pilotName}</span>
+          <span class="lb-lap" style="color: #ffffff; font-size: 0.65rem; text-align: center;">${laps}</span>
+          <span class="lb-time" style="color: #00d084; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-align: right;">${timeStr}</span>
         </div>`;
     }
     lbTableRows.innerHTML = html;
@@ -4038,7 +4041,7 @@ function restartOnNewTrack() {
   for (const vehicle of previousCars) {
     try {
       vehicle.dispose();
-    } catch (e) {}
+    } catch (e) { }
   }
   savedVehicles = [];
   generationPopulationSize = TOTAL;
@@ -4215,7 +4218,7 @@ function drawTelemetryChart() {
         ctx.fillStyle = grad;
         ctx.fill();
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Fonction de tracé d'une série de données
@@ -4333,13 +4336,13 @@ function drawRadarSensorDisplay(leaderCar) {
   };
 
   // Avant (haut, centré à -PI/2, span 120° = -PI/2 - PI/3 à -PI/2 + PI/3)
-  drawArcSector(-Math.PI * 5/6, -Math.PI / 6, 'rgba(0, 208, 132, 0.16)', 'rgba(0, 208, 132, 0.65)');
+  drawArcSector(-Math.PI * 5 / 6, -Math.PI / 6, 'rgba(0, 208, 132, 0.16)', 'rgba(0, 208, 132, 0.65)');
   // Gauche (span 90° centré à PI, soit 3*PI/4 à 5*PI/4)
-  drawArcSector(Math.PI * 3/4, Math.PI * 5/4, 'rgba(255, 138, 0, 0.12)', 'rgba(255, 138, 0, 0.5)');
+  drawArcSector(Math.PI * 3 / 4, Math.PI * 5 / 4, 'rgba(255, 138, 0, 0.12)', 'rgba(255, 138, 0, 0.5)');
   // Droite (span 90° centré à 0, soit -PI/4 à PI/4)
   drawArcSector(-Math.PI / 4, Math.PI / 4, 'rgba(112, 230, 165, 0.14)', 'rgba(112, 230, 165, 0.55)');
   // Arrière (bas, centré à PI/2, span 120° = PI/6 à 5*PI/6)
-  drawArcSector(Math.PI / 6, Math.PI * 5/6, 'rgba(239, 68, 68, 0.10)', 'rgba(239, 68, 68, 0.45)');
+  drawArcSector(Math.PI / 6, Math.PI * 5 / 6, 'rgba(239, 68, 68, 0.10)', 'rgba(239, 68, 68, 0.45)');
 
   // Silhouette de la voiture de course au centre du radar (orientée vers le haut)
   ctx.save();
@@ -4814,28 +4817,130 @@ function setupUIEventListeners() {
     });
   }
 
-    const selActiveCircuit = document.getElementById('select-active-circuit');
-    if (selActiveCircuit) {
-      selActiveCircuit.addEventListener('change', (e) => {
-        const idx = parseInt(e.target.value, 10);
-        if (!isNaN(idx) && idx >= 0 && idx < STAGES.length) {
-          loadStage(idx, false, true);
-        }
-      });
-    }
+  const selActiveCircuit = document.getElementById('select-active-circuit');
+  if (selActiveCircuit) {
+    selActiveCircuit.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.value, 10);
+      if (!isNaN(idx) && idx >= 0 && idx < STAGES.length) {
+        loadStage(idx, false, true);
+      }
+    });
+  }
 
-    const btnModeAi = document.getElementById('btn-mode-ai');
-    const btnModeManual = document.getElementById('btn-mode-manual');
-    if (btnModeAi) {
-      btnModeAi.addEventListener('click', () => {
-        setDrivingMode('ai');
+  const btnModeAi = document.getElementById('btn-mode-ai');
+  const btnModeManual = document.getElementById('btn-mode-manual');
+  if (btnModeAi) {
+    btnModeAi.addEventListener('click', () => {
+      setDrivingMode('ai');
+    });
+  }
+  if (btnModeManual) {
+    btnModeManual.addEventListener('click', () => {
+      setDrivingMode('manual');
+    });
+  }
+
+  // Initialisation et gestion des Trajectoires & Capteurs (Module 3 Dock)
+  window.trajOptions = {
+    real: true,
+    desired: true,
+    force: true,
+    target: false
+  };
+
+  const chkTrajReal = document.getElementById('chk-traj-real');
+  const chkTrajDesired = document.getElementById('chk-traj-desired');
+  const chkTrajForce = document.getElementById('chk-traj-force');
+  const chkTrajTarget = document.getElementById('chk-traj-target');
+  const btnToggleSensors = document.getElementById('btn-toggle-sensors');
+  const btnToggleAllViz = document.getElementById('btn-toggle-all-viz');
+
+  if (chkTrajReal) window.trajOptions.real = chkTrajReal.checked;
+  if (chkTrajDesired) window.trajOptions.desired = chkTrajDesired.checked;
+  if (chkTrajForce) window.trajOptions.force = chkTrajForce.checked;
+  if (chkTrajTarget) window.trajOptions.target = chkTrajTarget.checked;
+
+  function updateAllVizBtnState() {
+    const allChecked = (chkTrajReal ? chkTrajReal.checked : true) &&
+                       (chkTrajDesired ? chkTrajDesired.checked : true) &&
+                       (chkTrajForce ? chkTrajForce.checked : true) &&
+                       (chkTrajTarget ? chkTrajTarget.checked : true) &&
+                       (sensorDisplayMode !== 'none');
+    if (btnToggleAllViz) {
+      if (allChecked) btnToggleAllViz.classList.add('active');
+      else btnToggleAllViz.classList.remove('active');
+    }
+  }
+
+  function syncSensorBtnState() {
+    if (btnToggleSensors) {
+      if (sensorDisplayMode !== 'none') btnToggleSensors.classList.add('active');
+      else btnToggleSensors.classList.remove('active');
+    }
+    const carSensorsEl = document.getElementById('gt3-sensors-active');
+    if (carSensorsEl) carSensorsEl.textContent = (sensorDisplayMode === 'none') ? 'MASQUÉS' : '7 / 7 ACTIFS';
+  }
+
+  const trajCheckboxes = [
+    { el: chkTrajReal, key: 'real' },
+    { el: chkTrajDesired, key: 'desired' },
+    { el: chkTrajForce, key: 'force' },
+    { el: chkTrajTarget, key: 'target' }
+  ];
+
+  trajCheckboxes.forEach(({ el, key }) => {
+    if (el) {
+      el.addEventListener('change', () => {
+        window.trajOptions[key] = el.checked;
+        if (el.checked && !isDebugActive()) {
+          setDebugMode(true);
+        }
+        updateAllVizBtnState();
       });
     }
-    if (btnModeManual) {
-      btnModeManual.addEventListener('click', () => {
-        setDrivingMode('manual');
-      });
-    }
+  });
+
+  if (btnToggleSensors) {
+    btnToggleSensors.addEventListener('click', () => {
+      if (sensorDisplayMode === 'none') {
+        sensorDisplayMode = 'all';
+        if (!isDebugActive()) setDebugMode(true);
+      } else {
+        sensorDisplayMode = 'none';
+      }
+      syncSensorBtnState();
+      updateAllVizBtnState();
+    });
+    syncSensorBtnState();
+  }
+
+  if (btnToggleAllViz) {
+    btnToggleAllViz.addEventListener('click', () => {
+      const isEverythingActive = (chkTrajReal ? chkTrajReal.checked : true) &&
+                                 (chkTrajDesired ? chkTrajDesired.checked : true) &&
+                                 (chkTrajForce ? chkTrajForce.checked : true) &&
+                                 (chkTrajTarget ? chkTrajTarget.checked : true) &&
+                                 (sensorDisplayMode !== 'none');
+
+      const newState = !isEverythingActive;
+      if (chkTrajReal) chkTrajReal.checked = newState;
+      if (chkTrajDesired) chkTrajDesired.checked = newState;
+      if (chkTrajForce) chkTrajForce.checked = newState;
+      if (chkTrajTarget) chkTrajTarget.checked = newState;
+
+      window.trajOptions.real = newState;
+      window.trajOptions.desired = newState;
+      window.trajOptions.force = newState;
+      window.trajOptions.target = newState;
+
+      sensorDisplayMode = newState ? 'all' : 'none';
+      if (newState && !isDebugActive()) setDebugMode(true);
+
+      syncSensorBtnState();
+      updateAllVizBtnState();
+    });
+    updateAllVizBtnState();
+  }
 
   // Animation de retour visuel sur les badges de touches
   function flashKeyBadge(badgeId) {
@@ -4849,7 +4954,7 @@ function setupUIEventListeners() {
   // Fonction universelle de zoom à la molette sur le circuit (style Google Maps)
   // - Molette vers le haut (deltaY < 0) : Agrandit le circuit (Zoom In)
   // - Molette vers le bas  (deltaY > 0) : Rétrécit le circuit (Zoom Out)
-  window.handleCircuitWheelZoom = function(e) {
+  window.handleCircuitWheelZoom = function (e) {
     if (!e) return;
     // Laisser le navigateur gérer le zoom de la page avec Ctrl + Molette
     if (e.ctrlKey || e.metaKey) return;
@@ -5011,6 +5116,14 @@ function setupUIEventListeners() {
     if (e.code === 'Space' || e.key === ' ') {
       manualInputState.handbrake = false;
     }
+  });
+
+  window.addEventListener('blur', () => {
+    manualInputState.up = false;
+    manualInputState.down = false;
+    manualInputState.left = false;
+    manualInputState.right = false;
+    manualInputState.handbrake = false;
   });
 
   // Rendre les badges de touches cliquables directement à la souris
@@ -5243,6 +5356,17 @@ function setDrivingMode(mode) {
   const badgeMode = document.getElementById('badge-driving-mode');
   const btnCamFollow = document.getElementById('btn-cam-follow');
   const btnCamFree = document.getElementById('btn-cam-free');
+  const topbarModeBtn = document.getElementById('btn-topbar-mode');
+
+  if (topbarModeBtn) {
+    if (currentDrivingMode === 'manual') {
+      topbarModeBtn.innerHTML = '<span class="chip-icon">🎮</span><span>MODE MANUEL</span>';
+      topbarModeBtn.classList.add('manual-active');
+    } else {
+      topbarModeBtn.innerHTML = '<span class="chip-icon">🤖</span><span>MODE IA</span>';
+      topbarModeBtn.classList.remove('manual-active');
+    }
+  }
 
   if (currentDrivingMode === 'manual') {
     if (btnAi) btnAi.classList.remove('active');
@@ -5252,12 +5376,16 @@ function setDrivingMode(mode) {
     if (badgeMode) badgeMode.textContent = 'MODE MANUEL';
 
     // Assigner le bolide manuel : le bolide sélectionné, le leader ou le premier bolide vivant
-    if (!manualVehicle || manualVehicle.dead) {
+    if (selectedVehicle && !selectedVehicle.dead && !selectedVehicle.finished) {
+      manualVehicle = selectedVehicle;
+    } else if (!manualVehicle || manualVehicle.dead || manualVehicle.finished) {
       const candidates = population.filter(v => !v.dead && !v.finished);
       manualVehicle = (candidates.length > 0) ? candidates[0] : (population[0] || null);
     }
     if (manualVehicle) {
+      for (let v of population) v.isManual = false;
       manualVehicle.isManual = true;
+      selectedVehicle = manualVehicle;
       if (cameraMode !== 'cockpit') {
         setCameraMode('follow');
       }
@@ -5310,6 +5438,11 @@ function mousePressed() {
 
   if (closest) {
     selectedVehicle = closest;
+    if (currentDrivingMode === 'manual') {
+      for (let v of population) v.isManual = false;
+      manualVehicle = closest;
+      manualVehicle.isManual = true;
+    }
     setCameraMode('follow');
     updateZoomDisplay();
   }
@@ -5679,7 +5812,7 @@ function loadStage(stageIndex, preserveBrains = false, unlockIfLocked = false) {
   for (const v of previousCars) {
     try {
       v.dispose();
-    } catch (e) {}
+    } catch (e) { }
   }
   savedVehicles = [];
   generationPopulationSize = TOTAL;
@@ -6280,7 +6413,7 @@ function renderNeuralNetworkVisualizer() {
           bOut: (weights[3] && weights[3].dataSync) ? weights[3].dataSync() : null
         };
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
   // Calcul des activations réelles des 9 entrées
