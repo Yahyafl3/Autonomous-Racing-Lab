@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07111d" />
+    <title>Autonomous Racing Lab · Simulation IA & Championnat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.8.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.8.0/addons/p5.dom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.1.0/dist/tf.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=4.0" />
+  </head>
+  <body>
+    <!-- BARRE SUPÉRIEURE DE NAVIGATION ET STATUTS -->
+    <header class="topbar">
+      <a class="brand" href="#simulation" aria-label="Autonomous Racing Lab, accueil">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M7 22 9.4 12.8A3.7 3.7 0 0 1 13 10h6a3.7 3.7 0 0 1 3.6 2.8L25 22v4h-3v-2H10v2H7zm4.3-8-1.1 4h11.6l-1.1-4a1.7 1.7 0 0 0-1.7-1.3h-6a1.7 1.7 0 0 0-1.7 1.3ZM11 21a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8Zm10 0a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8Z"/></svg>
+        </span>
+        <span class="brand-copy">
+          <span class="brand-name">AUTONOMOUS <b>RACING LAB</b></span>
+          <span class="brand-caption">Evolutionary Steering & Neural Network Championship</span>
+        </span>
+      </a>
+
+      <!-- SÉLECTEUR RAPIDE DE STAGE & STATUTS -->
+      <div class="topbar-status" aria-label="État de la course et des stages">
+        <button id="btn-open-race-setup" class="race-setup-nav-btn" type="button" title="Ouvrir la préparation de course Formula Racing">
+          <span class="stage-nav-icon" aria-hidden="true">🚦</span>
+          <span class="stage-nav-text"><b id="topbar-setup-btn-text">RACE SETUP</b></span>
+        </button>
+
+        <button id="btn-open-stages" class="stage-nav-btn" type="button" title="Ouvrir la sélection des stages et circuits">
+          <span class="stage-nav-icon" aria-hidden="true">🏁</span>
+          <span class="stage-nav-text"><b id="topbar-stage-badge">STAGE 1</b> <span id="topbar-stage-name">Beginner Circuit</span></span>
+          <span class="stage-nav-badge" id="topbar-stage-progress">1 / 5</span>
+        </button>
+
+        <div class="circuit-picker-container" title="Sélection directe du circuit officiel">
+          <label for="select-active-circuit" class="sr-only">Circuit de course officiel</label>
+          <select id="select-active-circuit" class="topbar-circuit-select">
+            <option value="0">🏁 Circuit 1 : Pro Grand Prix (Compétition)</option>
+            <option value="1">🌵 Circuit 2 : Mojave Canyon (Désert)</option>
+            <option value="2">🌲 Circuit 3 : Blackwood Ring (Forêt)</option>
+            <option value="3">🏙️ Circuit 4 : Neo-Tokyo (Urbain)</option>
+            <option value="4">🏆 Circuit 5 : Yas Marina (SuperSpeedway)</option>
+          </select>
+        </div>
+
+        <span class="chrono-chip" id="chrono-display" title="Temps écoulé depuis le début de la session">
+          <i class="chrono-icon" aria-hidden="true">⏱</i>
+          <span id="timer-text">00:00.0</span>
+        </span>
+
+        <span id="badge-status" class="status-chip"><i class="status-dot"></i><span id="status-text">RUNNING</span></span>
+        <span class="mode-chip" id="chip-driving-mode"><span class="chip-icon" aria-hidden="true">🤖</span><span id="badge-driving-mode">MODE IA</span></span>
+        <button class="debug-topbar-btn" type="button" id="btn-topbar-debug" title="Mode Débogage (Touche F3 ou B)">
+          <span class="debug-icon">⚡</span>
+          <span>DÉBOGAGE</span>
+          <span class="debug-badge-pill" id="topbar-debug-pill">OFF</span>
+        </button>
+        <button class="nn-topbar-btn" type="button" id="btn-topbar-nn" onclick="if(typeof toggleNeuralModal === 'function') toggleNeuralModal();" title="Visualiser le Réseau de Neurones en Direct (Touche N)">
+          <span class="nn-icon">🧠</span>
+          <span>RÉSEAU IA</span>
+        </button>
+        <button class="mute-topbar-btn muted" type="button" id="btn-topbar-mute" title="Son désactivé (Fluidité maximale)">
+          <span class="mute-icon">🔇</span>
+        </button>
+        <span class="topbar-divider"></span>
+        <span class="mode-chip"><span class="chip-icon" aria-hidden="true">⌁</span><span id="badge-mode">COURSE</span></span>
+        <span class="track-chip"><span class="chip-icon" aria-hidden="true">◎</span><span id="badge-track">STAGE #1</span></span>
+      </div>
+    </header>
+
+    <!-- COEUR DE L'APPLICATION (SIMULATION + TÉLÉMÉTRIE + DOCK DE CONTRÔLES) -->
+    <main class="app-shell" id="simulation">
+      <!-- ZONE DE SIMULATION CANVAS P5.JS + THREE.JS 3D -->
+      <section class="simulation-column" aria-label="Simulation du circuit">
+        <div class="viewport-wrapper">
+          <div id="canvas-container" aria-label="Circuit et véhicules simulés"></div>
+          <div class="stage-vignette" aria-hidden="true"></div>
+
+          <!-- PORTIQUE DE FEUX DE DÉPART FORMULE 1 (STARTING LIGHTS GANTRY) -->
+          <div id="f1-starting-lights-gantry" class="f1-gantry hidden" aria-label="Feux de départ Formule 1">
+            <div class="gantry-header">
+              <span class="gantry-f1-logo">FORMULA 1 · START PROCEDURE</span>
+              <span id="gantry-status-badge" class="gantry-badge">READY TO RACE</span>
+            </div>
+            <div class="gantry-chassis">
+              <div class="gantry-light-pod" id="gantry-pod-0">
+                <div class="light-lamp lamp-top"></div>
+                <div class="light-lamp lamp-bottom"></div>
+              </div>
+              <div class="gantry-light-pod" id="gantry-pod-1">
+                <div class="light-lamp lamp-top"></div>
+                <div class="light-lamp lamp-bottom"></div>
+              </div>
+              <div class="gantry-light-pod" id="gantry-pod-2">
+                <div class="light-lamp lamp-top"></div>
+                <div class="light-lamp lamp-bottom"></div>
+              </div>
+              <div class="gantry-light-pod" id="gantry-pod-3">
+                <div class="light-lamp lamp-top"></div>
+                <div class="light-lamp lamp-bottom"></div>
+              </div>
+              <div class="gantry-light-pod" id="gantry-pod-4">
+                <div class="light-lamp lamp-top"></div>
+                <div class="light-lamp lamp-bottom"></div>
+              </div>
+            </div>
+            <div id="gantry-subtext" class="gantry-subtext">ATTENDEZ L'EXTINCTION DES FEUX</div>
+          </div>
+
+          <!-- BANNIÈRE D'INDICATEUR DE DÉPART (RACE STARTED) -->
+          <div id="race-started-banner" class="race-started-banner hidden" aria-live="assertive">
+            <span class="banner-title">LIGHTS OUT!</span>
+            <span class="banner-sub">AND AWAY WE GO! 🏎️💨</span>
+          </div>
+
+          <!-- HUD EN OVERLAY SUR LE CANVAS (ORIGINAL PRÉSERVÉ) -->
+          <div class="stage-stats" aria-label="Résumé en direct">
+            <div class="stage-stat stage-stat-stage">
+              <span>STAGE ACTUEL</span>
+              <b id="overlay-stage-title">STAGE 1 : BEGINNER</b>
+            </div>
+            <div class="stage-stat stage-stat-lap">
+              <span>OBJECTIF TOUR</span>
+              <b id="overlay-lap">TOUR 1 / 1</b>
+            </div>
+            <div class="stage-stat">
+              <span>GÉNÉRATION</span>
+              <b id="overlay-gen">1</b>
+            </div>
+            <div class="stage-stat">
+              <span>VOITURES EN VIE</span>
+              <b id="overlay-alive">100 / 100</b>
+            </div>
+            <div class="stage-stat stage-stat-champion">
+              <span>LEADER (CHAMPION)</span>
+              <b id="overlay-leader">0 CP</b>
+            </div>
+            <div class="stage-stat stage-stat-time">
+              <span>CHRONOMÈTRE</span>
+              <b id="overlay-time">00:00.0</b>
+            </div>
+          </div>
+
+          <!-- CLASSEMENT GT3 EN DIRECT (LIVE LEADERBOARD) -->
+          <aside id="live-leaderboard" class="live-leaderboard-card" aria-label="Classement GT3 en direct">
+            <div class="lb-header">
+              <div class="lb-title-group">
+                <span class="lb-caption">CHAMPIONSHIP</span>
+                <span class="lb-title">LIVE LEADERBOARD</span>
+              </div>
+              <span class="lb-stage-badge" id="lb-stage-badge">STAGE 1</span>
+            </div>
+            <div class="lb-grid-head">
+              <span class="col-pos">POS</span>
+              <span class="col-car">CAR</span>
+              <span class="col-prog">PROG</span>
+              <span class="col-fit">FITNESS</span>
+              <span class="col-status">STATUT</span>
+            </div>
+            <div id="lb-table-rows" class="lb-grid-body">
+              <!-- Rempli en temps réel -->
+            </div>
+          </aside>
+
+          <!-- TABLEAU DE BORD INSTRUMENTS COCKPIT GT3 -->
+          <div id="gt3-cluster" class="gt3-cluster" aria-label="Cockpit GT3 & Télémétrie">
+            <div class="gt3-cluster-main">
+              <div class="gt3-tachometer-box">
+                <svg class="tacho-dial" viewBox="0 0 140 140">
+                  <circle class="tacho-track" cx="70" cy="70" r="54"></circle>
+                  <circle id="tacho-progress-bar" class="tacho-fill" cx="70" cy="70" r="54"></circle>
+                </svg>
+                <div class="tacho-data">
+                  <span id="gt3-speed-val" class="tacho-speed">187</span>
+                  <span class="tacho-unit">KM/H</span>
+                  <span id="gt3-gear-val" class="tacho-gear">4</span>
+                  <span class="tacho-gear-label">GEAR</span>
+                </div>
+              </div>
+              <div class="gt3-cluster-info">
+                <div class="gt3-car-id-row">
+                  <span class="gt3-car-icon">🏎</span>
+                  <b id="gt3-car-name">#46 BMW M4 GT3</b>
+                  <span class="gt3-lap-chip">TOUR <b id="gt3-car-lap">1</b></span>
+                </div>
+                <div class="gt3-fit-row">
+                  <span>FITNESS:</span>
+                  <strong id="gt3-car-fitness">0.000</strong>
+                  <span class="gt3-div">|</span>
+                  <span>CAPTEURS:</span>
+                  <strong id="gt3-sensors-active">7 / 7 ACTIFS</strong>
+                </div>
+                <div class="gt3-pedals">
+                  <div class="pedal-gauge">
+                    <span class="pedal-label">THR</span>
+                    <div class="pedal-track"><div id="gt3-throttle-bar" class="pedal-fill fill-throttle" style="width: 85%;"></div></div>
+                  </div>
+                  <div class="pedal-gauge">
+                    <span class="pedal-label">BRK</span>
+                    <div class="pedal-track"><div id="gt3-brake-bar" class="pedal-fill fill-brake" style="width: 0%;"></div></div>
+                  </div>
+                  <div class="pedal-gauge">
+                    <span class="pedal-label">STR</span>
+                    <div class="pedal-track"><div id="gt3-steer-bar" class="pedal-fill fill-steer" style="width: 50%;"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- WIDGET PROCHAIN CHECKPOINT -->
+          <div id="next-cp-widget" class="next-cp-card" aria-label="Prochain Checkpoint">
+            <div class="next-cp-arrow-box"><span id="next-cp-arrow-icon" class="next-cp-arrow">▲</span></div>
+            <div class="next-cp-details">
+              <span class="next-cp-kicker">NEXT CHECKPOINT</span>
+              <b id="next-cp-val">CP 1 / 60</b>
+              <small id="next-cp-distance">240 m</small>
+            </div>
+          </div>
+
+          <!-- MINI-CARTE VECTORIELLE DU CIRCUIT COURANT -->
+          <div class="minimap-card">
+            <canvas id="track-minimap" width="260" height="140" aria-label="Mini-carte du circuit actuel"></canvas>
+            <div class="minimap-meta">
+              <span class="minimap-caption">RADAR HOLOGRAPHIQUE</span>
+              <span class="minimap-subcaption" id="minimap-stage-sub">STAGE 1</span>
+            </div>
+          </div>
+
+          <!-- LÉGENDE DU CIRCUIT -->
+          <div class="track-legend" aria-label="Légende du circuit">
+            <span><i class="legend-car legend-car-champion"></i>Leader (Orange)</span>
+            <span><i class="legend-car legend-car-other"></i>Flotte IA</span>
+            <span><i class="legend-sensor"></i>Lasers Cyan</span>
+            <span><i class="legend-kerb"></i>Vibreurs</span>
+            <span><i class="legend-wall"></i>Rails Laser</span>
+          </div>
+
+          <span class="stage-label"><i></i> LIVE MOTORSPORT SIMULATION</span>
+        </div>
+      </section>
+
+      <!-- PANNEAU LATÉRAL DE TÉLÉMÉTRIE ET DE PERCEPTION -->
+      <aside class="telemetry-column" aria-label="Télémétrie et évolution">
+        <section class="panel-card telemetry-card">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">RACE ENGINEERING</span>
+              <h2>Télémétrie & Évolution</h2>
+            </div>
+            <span id="telemetry-speed-badge" class="speed-chip">1×</span>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-label">Génération</span>
+              <strong id="stat-gen">1</strong>
+              <small>Cycle évolutif</small>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Voitures en vie</span>
+              <strong id="stat-alive">100 / 100</strong>
+              <small id="stat-alive-subtext">100% en piste</small>
+            </article>
+            <article class="stat-card stat-champion">
+              <span class="stat-label">Meilleur génération</span>
+              <strong><span id="stat-current-best">0</span><em>CP</em></strong>
+              <small>Leader Champion</small>
+            </article>
+            <article class="stat-card stat-record">
+              <span class="stat-label">Record absolu</span>
+              <strong><span id="stat-record">0</span><em>CP</em></strong>
+              <small>Maximum historique</small>
+            </article>
+          </div>
+
+          <!-- GRAPHIQUE HISTORIQUE D'ÉVOLUTION DES SCORES (RÉEL ET NON SIMULÉ) -->
+          <section class="chart-card" aria-label="Graphique des scores par génération">
+            <div class="chart-heading">
+              <div>
+                <span class="eyebrow">HISTORIQUE ÉVOLUTIF</span>
+                <h3>Évolution des scores</h3>
+              </div>
+              <div class="chart-legend">
+                <span><i class="chart-key key-best"></i>Meilleur</span>
+                <span><i class="chart-key key-avg"></i>Moyenne</span>
+                <span><i class="chart-key key-min"></i>Min</span>
+              </div>
+            </div>
+            <canvas id="telemetry-chart" width="640" height="210" aria-label="Scores réels des générations et record historique"></canvas>
+          </section>
+        </section>
+
+        <!-- RADAR CAPTEURS & ENVIRONNEMENT (4 QUADRANTS + OBSTACLES) -->
+        <section class="panel-card radar-card" aria-label="Capteurs et Environnement">
+          <div class="panel-heading compact-heading">
+            <div>
+              <span class="eyebrow">PERCEPTION RADAR</span>
+              <h2>Capteurs & Environnement</h2>
+            </div>
+            <span class="sensor-symbol" aria-hidden="true">⌖</span>
+          </div>
+
+          <div class="radar-box">
+            <canvas id="radar-sensor-display" width="280" height="190" aria-label="Radar holographique 360° du véhicule leader"></canvas>
+            <div class="radar-legend-grid">
+              <div class="radar-leg-item"><span class="radar-swatch swatch-front"></span><span>Avant (rayon 120°)</span></div>
+              <div class="radar-leg-item"><span class="radar-swatch swatch-left"></span><span>Gauche (rayon 90°)</span></div>
+              <div class="radar-leg-item"><span class="radar-swatch swatch-right"></span><span>Droite (rayon 90°)</span></div>
+              <div class="radar-leg-item"><span class="radar-swatch swatch-rear"></span><span>Arrière (rayon 120°)</span></div>
+              <div class="radar-leg-item"><span class="radar-sym-dot">○</span><span>Autres véhicules</span></div>
+              <div class="radar-leg-item"><span class="radar-sym-tri">▲</span><span>Obstacles / Rails</span></div>
+            </div>
+          </div>
+
+          <div class="sensor-options" role="group" aria-label="Mode d’affichage des capteurs">
+            <button class="sensor-option active" id="btn-sensors-leader" type="button"><span aria-hidden="true">◉</span>Leader</button>
+            <button class="sensor-option" id="btn-sensors-all" type="button"><span aria-hidden="true">⠿</span>Toutes</button>
+            <button class="sensor-option" id="btn-sensors-none" type="button"><span aria-hidden="true">⊘</span>Masqués</button>
+          </div>
+        </section>
+      </aside>
+
+      <!-- BARRE DE CONTRÔLES INFERIEURE ÉTENDUE (DOCK DE PILOTAGE GT3) -->
+      <section class="control-dock" aria-label="Contrôles de simulation et steering">
+        <!-- MODULE 1 : CONTRÔLES PILOTE -->
+        <div class="control-module controls-summary-module">
+          <div class="module-heading"><span class="module-icon">🎮</span><span>Modes & Contrôles</span></div>
+          <div class="mode-toggle-group" role="group" aria-label="Mode de pilotage">
+            <button class="mode-btn active" type="button" id="btn-mode-ai" title="Mode IA Autonome (Touche M)"><span class="mode-btn-icon">🤖</span>Mode IA</button>
+            <button class="mode-btn" type="button" id="btn-mode-manual" title="Mode Manuel Joueur (Touche M)"><span class="mode-btn-icon">🎮</span>Mode Manuel</button>
+          </div>
+          <div class="controls-keymap" id="keymap-ai">
+            <div class="keymap-row" id="row-key-space" title="Barre Espace (pause/reprendre)"><code id="code-key-space">Espace</code><span>pause</span></div>
+            <div class="keymap-row" id="row-key-r" title="Touche R (réinitialiser simulation)"><code id="code-key-r">R</code><span>reset</span></div>
+            <div class="keymap-row" id="row-key-b" title="Touche F3 ou B (Mode Débogage ON/OFF)"><code id="code-key-b">F3 / B</code><span>débogage</span></div>
+            <div class="keymap-row" id="row-key-m" title="Touche M (Basculer IA / Manuel)"><code id="code-key-m">M</code><span>mode</span></div>
+            <div class="keymap-row" id="row-key-n" title="Touche N (Voir Réseau de Neurones)"><code id="code-key-n">N</code><span>neurones</span></div>
+          </div>
+          <div class="controls-keymap manual-keymap hidden" id="keymap-manual">
+            <div class="keymap-row" title="Accélérer / Tourner / Freiner"><code>ZQSD / ↑←↓→</code><span>piloter</span></div>
+            <div class="keymap-row" title="Freinage renforcé"><code>Espace</code><span>frein</span></div>
+            <div class="keymap-row" title="Remettre la voiture sur la piste"><code>R</code><span>replacer</span></div>
+            <div class="keymap-row" title="Revenir au Mode IA"><code>M</code><span>retour IA</span></div>
+          </div>
+          <div class="cam-modes-row">
+            <span class="cam-label">Caméra:</span>
+            <button class="cam-btn active" type="button" id="btn-cam-free" title="Vue globale du circuit (réinitialiser caméra et afficher tout le circuit)">⛶ Vue globale</button>
+            <button class="cam-btn" type="button" id="btn-cam-3d" title="Vue 3D Isométrique Haute Performance (sans lag)">📐 Vue 3D</button>
+            <button class="cam-btn" type="button" id="btn-cam-follow" title="Suivi de la voiture (3ème personne)">🏎️ Suivi</button>
+          </div>
+        </div>
+
+        <!-- MODULE 2 : INFORMATIONS DU VÉHICULE & BOUSSOLE -->
+        <div class="control-module vehicle-info-module">
+          <div class="module-heading"><span class="module-icon">🏎</span><span>Infos Véhicule</span></div>
+          <div class="vehicle-info-content">
+            <div class="vehicle-silhouette-box">
+              <span class="gt3-side-icon">🏎</span>
+              <div class="veh-telemetry-metrics">
+                <div><span>Vitesse:</span><b id="vehicle-speed-val">142 km/h</b></div>
+                <div><span>Position:</span><b id="vehicle-pos-val">1 / 100</b></div>
+                <div><span>Tour:</span><b id="vehicle-lap-val">2 / 3</b></div>
+              </div>
+            </div>
+            <div class="compass-box">
+              <span class="compass-caption">Direction</span>
+              <div class="compass-dial">
+                <div id="vehicle-compass-needle" class="compass-needle" style="transform: rotate(48deg);"></div>
+                <div class="compass-dial-rim"></div>
+              </div>
+              <b id="vehicle-heading-val">48°</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODULE 3 : TRAJECTOIRES ET SYMBOLES -->
+        <div class="control-module trajectories-module">
+          <div class="module-heading"><span class="module-icon">↝</span><span>Trajectoires</span></div>
+          <div class="trajectories-legend-grid">
+            <div class="traj-item"><span class="traj-line traj-real"></span><span>Trajectoire réelle</span></div>
+            <div class="traj-item"><span class="traj-line traj-desired"></span><span>Trajectoire désirée</span></div>
+            <div class="traj-item"><span class="traj-arrow">➜</span><span>Force de steering</span></div>
+            <div class="traj-item"><span class="traj-target">◎</span><span>Cible (circuit)</span></div>
+          </div>
+        </div>
+
+        <!-- MODULE 4 : PARAMÈTRES IA & STEERING BEHAVIORS -->
+        <div class="control-module steering-params-module">
+          <div class="module-heading"><span class="module-icon">⚙</span><span>Paramètres IA (Steering)</span></div>
+          <div class="steering-sliders-grid">
+            <div class="st-slider-row">
+              <label for="slider-maxspeed">Vitesse max:<b id="val-maxspeed">180</b></label>
+              <input type="range" id="slider-maxspeed" class="custom-slider mini-slider" min="60" max="240" step="5" value="180" />
+            </div>
+            <div class="st-slider-row">
+              <label for="slider-maxforce">Force steering:<b id="val-maxforce">1.8</b></label>
+              <input type="range" id="slider-maxforce" class="custom-slider mini-slider" min="0.5" max="3.5" step="0.1" value="1.8" />
+            </div>
+            <div class="st-slider-row">
+              <label for="slider-separation-radius">Rayon évitement:<b id="val-separation-radius">70</b></label>
+              <input type="range" id="slider-separation-radius" class="custom-slider mini-slider" min="20" max="120" step="5" value="70" />
+            </div>
+            <div class="st-slider-row">
+              <label for="slider-weight-seek">Poids Seek:<b id="val-weight-seek">1.0</b></label>
+              <input type="range" id="slider-weight-seek" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.0" />
+            </div>
+            <div class="st-slider-row">
+              <label for="slider-weight-sep">Poids Separation:<b id="val-weight-sep">1.2</b></label>
+              <input type="range" id="slider-weight-sep" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.2" />
+            </div>
+            <div class="st-slider-row">
+              <label for="slider-weight-avoid">Poids Avoidance:<b id="val-weight-avoid">1.6</b></label>
+              <input type="range" id="slider-weight-avoid" class="custom-slider mini-slider" min="0" max="3" step="0.1" value="1.6" />
+            </div>
+          </div>
+          <div class="steering-checkboxes-row">
+            <label class="st-check"><input type="checkbox" id="chk-seek" checked /><span>Seek</span></label>
+            <label class="st-check"><input type="checkbox" id="chk-separation" checked /><span>Separation</span></label>
+            <label class="st-check"><input type="checkbox" id="chk-avoidance" checked /><span>Avoidance</span></label>
+            <label class="st-check"><input type="checkbox" id="chk-alignment" checked /><span>Align</span></label>
+            <label class="st-check"><input type="checkbox" id="chk-cohesion" checked /><span>Cohesion</span></label>
+          </div>
+        </div>
+
+        <!-- MODULE 5 : ACTIONS SIMULATION PRINCIPALE -->
+        <div class="dock-actions control-module">
+          <div class="module-heading"><span class="module-icon">◫</span><span>Simulation</span></div>
+          <div class="action-row">
+            <button class="action-button action-primary" id="btn-pause" type="button" title="Mettre en pause ou reprendre la simulation"><span class="action-symbol" id="pause-icon" aria-hidden="true">Ⅱ</span><span id="btn-pause-text">Pause</span></button>
+            <button class="action-button" id="btn-reset" type="button" title="Réinitialiser la population sur le stage actuel"><span class="action-symbol" aria-hidden="true">↻</span><span>Reset</span></button>
+            <button class="action-button" id="btn-new-track" type="button" title="Renouveler le tracé aléatoire ou recharger"><span class="action-symbol" aria-hidden="true">⌁</span><span>Nouveau circuit</span></button>
+          </div>
+          <div class="mode-options" role="group" aria-label="Mode de circuit">
+            <button class="mode-option active" id="btn-mode-training" type="button">Entraînement</button>
+            <button class="mode-option" id="btn-mode-challenge" type="button">Défi aléatoire</button>
+          </div>
+          <span class="module-note" id="track-mode-desc">Tracé fixe du stage sélectionné ; scores comparables.</span>
+        </div>
+
+        <!-- MODULE 6 : PARAMÈTRES CADENCE & POPULATION -->
+        <div class="control-module slider-module simulation-params-module">
+          <div class="module-heading"><span class="module-icon">◴</span><span>Cadence & Flotte</span></div>
+          <div class="sim-sliders-grid">
+            <div class="sim-slider-col">
+              <label class="slider-inline-label" for="slider-speed"><span>Vitesse:</span><b id="val-speed">1×</b></label>
+              <input type="range" id="slider-speed" class="custom-slider mini-slider" min="1" max="20" step="1" value="1" aria-label="Vitesse de simulation" />
+              <div class="range-scale"><span>1×</span><span>20×</span></div>
+
+              <label class="slider-inline-label" for="slider-mutation"><span>Mutation:</span><b id="val-mutation">8%</b></label>
+              <input type="range" id="slider-mutation" class="custom-slider mini-slider" min="0" max="50" step="1" value="8" aria-label="Taux de mutation génétique" />
+              <div class="range-scale"><span>0%</span><span>50%</span></div>
+            </div>
+            <div class="sim-slider-col">
+              <label class="slider-inline-label" for="slider-sight"><span>Capteurs:</span><b id="val-sight">100 px</b></label>
+              <input type="range" id="slider-sight" class="custom-slider mini-slider" min="30" max="200" step="5" value="100" aria-label="Portée des capteurs" />
+              <div class="range-scale"><span>30 px</span><span>200 px</span></div>
+
+              <label class="slider-inline-label" for="slider-population"><span>Population:</span><b id="val-population">100</b></label>
+              <input type="range" id="slider-population" class="custom-slider mini-slider" min="20" max="200" step="10" value="100" aria-label="Taille de la population suivante" />
+              <div class="range-scale"><span>20</span><span>200</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIED DE PAGE SCIENTIFIQUE FUTURISTE -->
+      <footer class="app-footer">
+        <div class="footer-tags">
+          <span class="footer-tag"><i class="tag-dot">●</i> IA réactive</span>
+          <span class="footer-tag"><i class="tag-dot">●</i> Algorithmes génétiques</span>
+          <span class="footer-tag"><i class="tag-dot">●</i> Réseaux de neurones</span>
+        </div>
+        <div class="footer-slogan">Des voitures autonomes, un seul objectif : le meilleur tour !</div>
+      </footer>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 1 : SÉLECTION DES STAGES (CAMPAGNE ET CIRCUITS PROGRESSIFS)     -->
+    <!-- ==================================================================== -->
+    <div id="stages-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="stages-modal-title">
+      <div class="modal-card stages-modal-card">
+        <div class="modal-header">
+          <div class="modal-header-copy">
+            <span class="eyebrow">CHAMPIONNAT ÉVOLUTIF · MODE CARRIÈRE</span>
+            <h2 id="stages-modal-title">Sélection des Circuits (Stages 1 à 5)</h2>
+          </div>
+          <button class="modal-close-btn" id="btn-close-stages" type="button" aria-label="Fermer la sélection des stages">✕</button>
+        </div>
+
+        <!-- BARRE DE PROGRESSION GLOBALE -->
+        <div class="stages-progression-bar-container">
+          <div class="progression-label-row">
+            <span>PROGRESSION DU CHAMPIONNAT</span>
+            <b id="stages-progress-text">1 / 5 Stages Débloqués (20%)</b>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="stages-progress-fill" style="width: 20%;"></div>
+          </div>
+        </div>
+
+        <!-- GRILLE DES 5 CARTES DE STAGES -->
+        <div class="stages-grid" id="stages-grid">
+          <!-- Les 5 cartes de stage seront injectées et synchronisées par sketch.js -->
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-reset-progression" class="danger-btn" type="button" title="Remettre la progression à zéro">
+            <span aria-hidden="true">↺</span> Réinitialiser la progression
+          </button>
+          <button id="btn-stages-continue" class="action-button action-primary" type="button">
+            Fermer et continuer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 2 : ÉCRAN DE VICTOIRE IMMERSIF (VICTORY! STAGE COMPLETED)       -->
+    <!-- ==================================================================== -->
+    <div id="victory-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+      <div class="modal-card victory-modal-card">
+        <canvas id="victory-confetti-canvas" class="confetti-canvas" width="600" height="500"></canvas>
+        <div class="victory-header">
+          <div class="victory-trophy-badge" aria-hidden="true">🏆</div>
+          <span class="victory-kicker">STAGE COMPLETED · VICTOIRE HISTORIQUE</span>
+          <h2 id="victory-title">VICTORY!</h2>
+          <p class="victory-subtitle" id="victory-subtitle">Stage 1 — Beginner Circuit brillamment terminé !</p>
+        </div>
+
+        <div class="victory-stats-grid">
+          <div class="victory-stat-card">
+            <span class="v-label">TEMPS DE COURSE</span>
+            <strong id="victory-time">01:14.2</strong>
+            <small id="victory-time-record">Nouveau record personnel !</small>
+          </div>
+          <div class="victory-stat-card">
+            <span class="v-label">GÉNÉRATION</span>
+            <strong id="victory-gen">Gén 2</strong>
+            <small>Cycles d'évolution nécessaires</small>
+          </div>
+          <div class="victory-stat-card">
+            <span class="v-label">TOURS VALIDÉS</span>
+            <strong id="victory-laps">1 / 1</strong>
+            <small id="victory-cp-count">60 checkpoints franchis</small>
+          </div>
+          <div class="victory-stat-card">
+            <span class="v-label">PILOTE CHAMPION</span>
+            <strong id="victory-car-name">#1 Champion</strong>
+            <small id="victory-car-livery">Livrée Vert Émeraude</small>
+          </div>
+        </div>
+
+        <div class="victory-actions">
+          <button id="btn-victory-next" class="action-button action-primary victory-action-main" type="button">
+            <span id="victory-next-text">Stage suivant ▶</span>
+          </button>
+          <button id="btn-victory-replay" class="action-button" type="button">
+            <span>↻ Rejouer ce stage</span>
+          </button>
+          <button id="btn-victory-stages" class="action-button" type="button">
+            <span>🏁 Choix des stages</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 3 : CONFIRMATION DE RÉINITIALISATION DE PROGRESSION             -->
+    <!-- ==================================================================== -->
+    <div id="reset-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
+      <div class="modal-card confirm-modal-card">
+        <div class="modal-header">
+          <h2 id="reset-modal-title">Réinitialiser la progression ?</h2>
+        </div>
+        <p class="confirm-message">
+          Attention : vos temps records seront effacés et tous les stages 2 à 5 seront à nouveau verrouillés.
+          Cette action est irréversible.
+        </p>
+        <div class="confirm-actions">
+          <button id="btn-confirm-reset" class="danger-btn" type="button">Oui, réinitialiser</button>
+          <button id="btn-cancel-reset" class="action-button" type="button">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 4 : PRÉPARATION DE COURSE · RACE SETUP (FORMULA RACING)        -->
+    <!-- ==================================================================== -->
+    <div id="race-setup-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="race-setup-title">
+      <div class="modal-card race-setup-card">
+        <div class="modal-header">
+          <div class="modal-header-copy">
+            <span class="modal-eyebrow">FORMULA RACING SYSTEM</span>
+            <h2 id="race-setup-title">🏁 PRÉPARATION DE COURSE · RACE SETUP</h2>
+          </div>
+          <button class="modal-close-btn" id="btn-close-race-setup" type="button" aria-label="Fermer la préparation de course">✕</button>
+        </div>
+
+        <div class="race-setup-body">
+          <!-- SÉLECTEUR DE MODE DE JEU -->
+          <div class="setup-section">
+            <label class="setup-section-label">MODE DE JEU :</label>
+            <div class="game-mode-selector" role="radiogroup">
+              <button type="button" class="setup-mode-card active" data-mode="race" id="mode-opt-race">
+                <span class="mode-icon">🏆</span>
+                <div class="mode-text">
+                  <b>Course Grand Prix</b>
+                  <small>Multivoitures, grille F1, feux de départ & classement en direct</small>
+                </div>
+              </button>
+              <button type="button" class="setup-mode-card" data-mode="training" id="mode-opt-training">
+                <span class="mode-icon">🧬</span>
+                <div class="mode-text">
+                  <b>Entraînement IA</b>
+                  <small>Algorithme génétique, évolution des réseaux & mutations</small>
+                </div>
+              </button>
+              <button type="button" class="setup-mode-card" data-mode="time_trial" id="mode-opt-time-trial">
+                <span class="mode-icon">⏱️</span>
+                <div class="mode-text">
+                  <b>Contre-la-montre</b>
+                  <small>Chasse au chrono absolu, tracé fixe & meilleur tour</small>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- PARAMÈTRES PRINCIPAUX DE COURSE -->
+          <div class="setup-grid">
+            <!-- NOMBRE DE VOITURES (5 à 100) -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label for="setup-car-count">Nombre de voitures :</label>
+                <b id="setup-car-count-val" class="highlight-val">20</b>
+              </div>
+              <input type="range" id="setup-car-count" class="custom-slider" min="5" max="100" step="5" value="20" />
+              <div class="slider-presets">
+                <button type="button" class="chip-preset" data-val="5">5</button>
+                <button type="button" class="chip-preset active" data-val="20">20</button>
+                <button type="button" class="chip-preset" data-val="50">50</button>
+                <button type="button" class="chip-preset" data-val="100">100</button>
+              </div>
+            </div>
+
+            <!-- NOMBRE DE TOURS (1 à 30) -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label for="setup-laps">Nombre de tours :</label>
+                <b id="setup-laps-val" class="highlight-val">3 tours</b>
+              </div>
+              <input type="range" id="setup-laps" class="custom-slider" min="1" max="30" step="1" value="3" />
+              <div class="slider-presets">
+                <button type="button" class="chip-preset" data-val="1">1 tour</button>
+                <button type="button" class="chip-preset active" data-val="3">3 tours</button>
+                <button type="button" class="chip-preset" data-val="5">5 tours</button>
+                <button type="button" class="chip-preset" data-val="10">10 tours</button>
+                <button type="button" class="chip-preset" data-val="30">30 tours</button>
+              </div>
+            </div>
+
+            <!-- DURÉE DE LA PROCÉDURE DE DÉPART (3, 5 ou 10 s) -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label>Procédure des feux :</label>
+                <b id="setup-countdown-val" class="highlight-val">5 secondes</b>
+              </div>
+              <div class="btn-group-segmented" id="group-countdown-duration">
+                <button type="button" class="segmented-btn" data-duration="3">⚡ 3 sec (Express)</button>
+                <button type="button" class="segmented-btn active" data-duration="5">🚦 5 sec (Standard F1)</button>
+                <button type="button" class="segmented-btn" data-duration="10">⏳ 10 sec (Immersion)</button>
+              </div>
+            </div>
+
+            <!-- CIRCUIT : ACTUEL OU ALÉATOIRE -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label>Circuit :</label>
+                <b id="setup-track-val" class="highlight-val">Circuit actuel</b>
+              </div>
+              <div class="btn-group-segmented" id="group-track-choice">
+                <button type="button" class="segmented-btn active" data-track="current">◎ Circuit actuel (Stage actif)</button>
+                <button type="button" class="segmented-btn" data-track="random">🎲 Nouveau circuit aléatoire</button>
+              </div>
+            </div>
+
+            <!-- EFFETS SONORES ET VOLUME -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label for="setup-sound-toggle">Effets sonores (F1 Audio) :</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setup-sound-toggle" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="sound-volume-row">
+                <span>Volume :</span>
+                <input type="range" id="setup-sound-volume" class="custom-slider mini-slider" min="0" max="100" step="5" value="70" />
+                <b id="setup-sound-volume-val">70%</b>
+              </div>
+            </div>
+
+            <!-- VITESSE DE SIMULATION -->
+            <div class="setup-card-item">
+              <div class="setup-item-header">
+                <label for="setup-sim-speed">Vitesse de simulation :</label>
+                <b id="setup-sim-speed-val" class="highlight-val">1× (Temps réel)</b>
+              </div>
+              <input type="range" id="setup-sim-speed" class="custom-slider" min="1" max="10" step="1" value="1" />
+              <div class="range-scale">
+                <span>1×</span>
+                <span>2×</span>
+                <span>5×</span>
+                <span>10×</span>
+              </div>
+            </div>
+
+            <!-- PARAMÈTRES ALGO GÉNÉTIQUE (ACTIFS EN TRAINING, DÉSACTIVÉS EN COURSE/CLM) -->
+            <div class="setup-card-item ga-specific-item" id="setup-ga-box">
+              <div class="setup-item-header">
+                <label>Algorithme Génétique :</label>
+                <span class="ga-status-badge disabled-mode" id="setup-ga-badge">DÉSACTIVÉ HORS ENTRAÎNEMENT</span>
+              </div>
+              <div class="ga-sliders-pair" id="setup-ga-controls">
+                <div class="ga-slider-field">
+                  <label for="setup-ga-pop">Population GA : <b id="setup-ga-pop-val">100</b></label>
+                  <input type="range" id="setup-ga-pop" class="custom-slider mini-slider" min="20" max="200" step="10" value="100" disabled />
+                </div>
+                <div class="ga-slider-field">
+                  <label for="setup-ga-mutation">Taux de mutation : <b id="setup-ga-mutation-val">8%</b></label>
+                  <input type="range" id="setup-ga-mutation" class="custom-slider mini-slider" min="0" max="50" step="1" value="8" disabled />
+                </div>
+              </div>
+              <p class="ga-disabled-note" id="setup-ga-note">
+                ℹ En mode Course et Contre-la-montre, les réseaux neuronaux actuels pilotent les bolides sans sélection génétique. Activez le mode « Entraînement IA » pour faire évoluer la population.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOUTONS D'ACTION DU MODAL -->
+        <div class="modal-footer setup-footer">
+          <button id="btn-cancel-race-setup" class="action-button secondary-btn" type="button">
+            <span>✕ Annuler</span>
+          </button>
+          <button id="btn-confirm-race-setup" class="action-button" type="button">
+            <span>✓ Confirmer les réglages</span>
+          </button>
+          <button id="btn-start-race-now" class="action-button action-primary race-launch-btn" type="button">
+            <span class="launch-icon">🚦</span>
+            <span>DÉMARRER LA COURSE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 5 : RÉSULTATS DE COURSE FORMULA RACING (RACE RESULTS)           -->
+    <!-- ==================================================================== -->
+    <div id="race-results-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="results-title">
+      <div class="modal-card race-results-card">
+        <div class="modal-header results-header">
+          <div class="modal-header-copy">
+            <span class="modal-eyebrow">GRAND PRIX TERMINÉ · DRAPEAU À DAMIER 🏁</span>
+            <h2 id="results-title">CLASSEMENT OFFICIEL DE LA COURSE</h2>
+          </div>
+          <button class="modal-close-btn" id="btn-close-race-results" type="button" aria-label="Fermer les résultats">✕</button>
+        </div>
+
+        <div class="results-podium">
+          <!-- P2 DEUXIÈME (ARGENT) -->
+          <div class="podium-step step-p2" id="podium-p2">
+            <span class="podium-medal">🥈 2e</span>
+            <div class="podium-car-pill" id="podium-p2-car">#--</div>
+            <b class="podium-time" id="podium-p2-time">+0.000s</b>
+          </div>
+          <!-- P1 VAINQUEUR (OR) -->
+          <div class="podium-step step-p1" id="podium-p1">
+            <span class="podium-trophy">🏆</span>
+            <span class="podium-medal">🥇 VAINQUEUR</span>
+            <div class="podium-car-pill p1-pill" id="podium-p1-car">#--</div>
+            <b class="podium-time" id="podium-p1-time">00:00.000</b>
+          </div>
+          <!-- P3 TROISIÈME (BRONZE) -->
+          <div class="podium-step step-p3" id="podium-p3">
+            <span class="podium-medal">🥉 3e</span>
+            <div class="podium-car-pill" id="podium-p3-car">#--</div>
+            <b class="podium-time" id="podium-p3-time">+0.000s</b>
+          </div>
+        </div>
+
+        <!-- STATISTIQUES CLÉS -->
+        <div class="results-stats-strip">
+          <div class="stat-pill">
+            <span>MEILLEUR TOUR :</span>
+            <b id="results-best-lap">--:--.---</b>
+          </div>
+          <div class="stat-pill">
+            <span>TOURS COUVERTS :</span>
+            <b id="results-laps-completed">0 / 0</b>
+          </div>
+          <div class="stat-pill">
+            <span>TEMPS DU VAINQUEUR :</span>
+            <b id="results-total-time">--:--.---</b>
+          </div>
+        </div>
+
+        <!-- TABLEAU COMPLET DE CLASSEMENT -->
+        <div class="results-table-container">
+          <table class="results-table" id="results-full-table">
+            <thead>
+              <tr>
+                <th>POS</th>
+                <th>VOITURE</th>
+                <th>ÉQUIPE</th>
+                <th>TOURS</th>
+                <th>TEMPS TOTAL</th>
+                <th>ÉCART</th>
+                <th>MEILLEUR TOUR</th>
+              </tr>
+            </thead>
+            <tbody id="results-table-body">
+              <!-- Rempli dynamiquement -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-footer results-footer">
+          <button id="btn-results-new-race" class="action-button action-primary" type="button">
+            <span>🚦 Nouvelle course</span>
+          </button>
+          <button id="btn-results-setup" class="action-button" type="button">
+            <span>⚙️ Modifier les réglages</span>
+          </button>
+          <button id="btn-results-close" class="action-button secondary-btn" type="button">
+            <span>Fermer & voir la piste</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- MODAL 6 : TÉLÉMÉTRIE & RÉSEAU DE NEURONES EN DIRECT (NEURAL VISUALIZER)-->
+    <!-- ==================================================================== -->
+    <div id="neural-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="neural-modal-title">
+      <div class="modal-card neural-modal-card">
+        <div class="modal-header neural-header">
+          <div class="modal-header-copy">
+            <span class="eyebrow">INTELLIGENCE ARTIFICIELLE · TÉLÉMÉTRIE SYNAPTIQUE</span>
+            <h2 id="neural-modal-title">Architecture du Réseau de Neurones</h2>
+            <p class="neural-subtitle" id="neural-target-name">Véhicule analysé : #1 (Champion Leader)</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-neural" type="button" aria-label="Fermer la vue neurones">✕</button>
+        </div>
+
+        <div class="neural-target-toolbar">
+          <span class="toolbar-label">Cible observée :</span>
+          <button class="target-chip active" id="btn-target-champion" type="button">🏆 Leader (Champion)</button>
+          <button class="target-chip" id="btn-target-selected" type="button">🎯 Véhicule Sélectionné</button>
+          <button class="target-chip" id="btn-target-manual" type="button">🎮 Ma Voiture (Joueur)</button>
+          <span class="neural-live-badge"><span class="live-dot"></span> EN DIRECT</span>
+        </div>
+
+        <div class="neural-canvas-container">
+          <canvas id="neural-canvas" width="760" height="420" aria-label="Visualisation dynamique du réseau neuronal"></canvas>
+        </div>
+
+        <div class="neural-stats-grid">
+          <div class="neural-stat-card">
+            <span class="stat-name">Couche Entrée</span>
+            <strong class="stat-value">9 Capteurs</strong>
+            <span class="stat-desc">7 rayons laser + Vitesse + Cap</span>
+          </div>
+          <div class="neural-stat-card">
+            <span class="stat-name">Couche Cachée</span>
+            <strong class="stat-value">16 Neurones</strong>
+            <span class="stat-desc">Activation Sigmoïde Dense</span>
+          </div>
+          <div class="neural-stat-card">
+            <span class="stat-name">Couche Sortie</span>
+            <strong class="stat-value">2 Actions</strong>
+            <span class="stat-desc">Direction [-1, +1] & Gaz [0, 1]</span>
+          </div>
+          <div class="neural-stat-card">
+            <span class="stat-name">Télémétrie en Direct</span>
+            <strong class="stat-value" id="nn-target-speed">0.0 km/h</strong>
+            <span class="stat-desc" id="nn-target-telemetry">Braquage: 0° | Gaz: 0%</span>
+          </div>
+        </div>
+
+        <div class="modal-footer neural-footer">
+          <button id="btn-close-neural-footer" class="action-button action-primary" type="button">
+            Fermer et retourner à la course
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPTS MODULAIRES DU PROJET (ORDRE STRICT DE DÉPENDANCES) -->
+    <script src="audio.js?v=4.0"></script>
+    <script src="nn.js?v=4.0"></script>
+    <script src="ga.js?v=4.0"></script>
+    <script src="ray.js?v=4.0"></script>
+    <script src="boundary.js?v=4.0"></script>
+    <script src="vehicle.js?v=4.0"></script>
+    <script src="circuits.js?v=4.0"></script>
+    <script src="sketch.js?v=4.0"></script>
+  </body>
+</html>
